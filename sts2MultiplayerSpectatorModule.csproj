@@ -1,0 +1,60 @@
+<Project Sdk="Godot.NET.Sdk/4.5.1">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>true</ImplicitUsings>
+    <LangVersion>13.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+
+    <Sts2Dir Condition="'$(Sts2Dir)' == ''">F:\SteamLibrary\steamapps\common\Slay the Spire 2</Sts2Dir>
+    <Sts2DataDir Condition="'$(Sts2DataDir)' == ''">$(Sts2Dir)\data_sts2_windows_x86_64</Sts2DataDir>
+    <GodotExe Condition="'$(GodotExe)' == ''">D:\Godot_v4.5.1-stable_mono_win64\Godot_v4.5.1-stable_mono_win64.exe</GodotExe>
+    <ExportDir Condition="'$(ExportDir)' == ''">$(MSBuildProjectDirectory)\build\$(MSBuildProjectName)</ExportDir>
+    <ModDir Condition="'$(ModDir)' == ''">$(Sts2Dir)\mods\$(MSBuildProjectName)</ModDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+    <Compile Remove="build/**/*.cs" />
+    <Reference Include="sts2">
+      <HintPath>$(Sts2DataDir)\sts2.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(Sts2DataDir)\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Steamworks.NET">
+      <HintPath>$(Sts2DataDir)\Steamworks.NET.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- 先导出到 build，再复制到游戏模组目录。 -->
+  <!-- Export to build first, then copy to the game's mods directory. -->
+  <Target Name="CopyMod" AfterTargets="Build" Condition="'$(DesignTimeBuild)' != 'true'">
+    <Message Text="Exporting mod to $(ExportDir)..." Importance="high" />
+    <MakeDir Directories="$(ExportDir)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ExportDir)" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\$(MSBuildProjectName).json" DestinationFolder="$(ExportDir)" />
+    <MakeDir Directories="$(ModDir)" Condition="'$(DeployToGame)' != 'false'" />
+    <Copy SourceFiles="$(ExportDir)\$(TargetFileName);$(ExportDir)\$(MSBuildProjectName).json"
+          DestinationFolder="$(ModDir)" Condition="'$(DeployToGame)' != 'false'" />
+  </Target>
+
+  <!-- 纯 DLL 雏形不自动导出资源，需要时显式执行 ExportPck。 -->
+  <!-- Export resources explicitly with ExportPck for this DLL-only prototype. -->
+  <Target Name="ExportPck"
+          Condition="'$(IsInnerGodotExport)' != 'true'">
+    <Error Condition="!Exists('$(GodotExe)')"
+           Text="Godot executable was not found at '$(GodotExe)'. Update the GodotExe property in $(MSBuildProjectFile)." />
+    <Message Text="Exporting PCK to $(ExportDir)..." Importance="high" />
+    <MakeDir Directories="$(ExportDir)" />
+    <Exec Command="&quot;$(GodotExe)&quot; --headless --path &quot;$(MSBuildProjectDirectory)&quot; --export-pack &quot;Windows Desktop&quot; &quot;$(ExportDir)\$(MSBuildProjectName).pck&quot;"
+          EnvironmentVariables="IsInnerGodotExport=true;MSBUILDDISABLENODEREUSE=1" />
+    <MakeDir Directories="$(ModDir)" Condition="'$(DeployToGame)' != 'false'" />
+    <Copy SourceFiles="$(ExportDir)\$(MSBuildProjectName).pck"
+          DestinationFolder="$(ModDir)" Condition="'$(DeployToGame)' != 'false'" />
+  </Target>
+</Project>
