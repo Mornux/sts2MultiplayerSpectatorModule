@@ -16,7 +16,7 @@ public partial class SpectatorSession
     private string _viewerColor = "dca747", _remoteViewerColor = "dca747";
     public string DrawingColor { get; private set; } = "dca747";
     public string InkColor => Watching ? DrawingColor : IsHost ? _viewerColor : _remoteViewerColor;
-    public sealed record Sketch(string Key, int Act, float[] Points);
+    public sealed record Sketch(string Key, int Act, float[] Points, string Stroke = "", long Revision = 0, bool Live = false);
 
     // 颜色按 RGB 同步，改色也会更新已经画出的观众笔迹。
     // Synchronize RGB colors, including spectator strokes already on the map.
@@ -37,14 +37,16 @@ public partial class SpectatorSession
     }
     public static bool ValidSketch(Sketch? sketch, string key, int act) => sketch is { Points.Length: >= 4 and <= 192 }
         && sketch.Key == key && sketch.Act == act && sketch.Points.Length % 2 == 0
-        && sketch.Points.All(value => float.IsFinite(value) && Math.Abs(value) < 10000);
+        && sketch.Points.All(value => float.IsFinite(value) && Math.Abs(value) < 10000)
+        && sketch.Stroke is { Length: 0 or 32 } && sketch.Revision is >= 0 and <= 1000000
+        && (!sketch.Live || sketch.Stroke.Length == 32);
 
-    public void SubmitSketch(float[] points)
+    public void SubmitSketch(float[] points, string stroke = "", long revision = 0, bool live = false)
     {
-        if (_host == 0 || Map == null || _ink.Count >= 64) return;
-        var sketch = new Sketch(Map.Key, Map.Act, points);
+        if (_host == 0 || Map == null) return;
+        var sketch = new Sketch(Map.Key, Map.Act, points, stroke, revision, live);
         if (!ValidSketch(sketch, Map.Key, Map.Act)) return;
-        _ink.Add(sketch);
+        if (!ApplySketch(sketch)) return;
         Send(_host, new(2, "draw", _token, JsonSerializer.Serialize(sketch)));
         Updated?.Invoke();
     }
@@ -96,25 +98,38 @@ public partial class SpectatorSession
             }
     }
 
-    // 画线作为独立叠层显示，不调用原版玩家绘图或投票接口。
-    // Show ink in a separate overlay without native player drawing or voting calls.
+    // 原版控件拥有自己的展示身份，不污染真实跑局的玩家列表。
+    // Give the native drawing control a display identity without adding a run participant.
     private void SyncNativeInk()
     {
-        var points = NMapScreen.Instance?.GetNodeOrNull<Control>("TheMap/Points");
-        if (points == null) return;
-        var overlay = points.GetNodeOrNull<Node2D>("SpectatorInk");
-        if (overlay == null) { overlay = new Node2D { Name = "SpectatorInk" }; points.AddChild(overlay); }
-        overlay.Position = points.Size / 2;
-        int act = RunManager.Instance.DebugOnlyGetState()?.CurrentActIndex ?? -1;
-        foreach (var line in overlay.GetChildren().OfType<Line2D>()) line.DefaultColor = new Color(InkColor);
-        if (overlay.GetChildCount() == _ink.Count && _ink.All(line => line.Act == act)) return;
-        foreach (var child in overlay.GetChildren()) { overlay.RemoveChild(child); child.QueueFree(); }
-        foreach (var sketch in _ink.Where(line => line.Act == act))
+        var map = NMapScreen.Instance;
+        if (map?.Drawings is not { } native) return;
+        var overlay = native.GetParent().GetNodeOrNull<SpectatorNativeInk>("SpectatorInk");
+        if (overlay == null)
         {
-            var line = new Line2D { Width = 6, DefaultColor = new Color(InkColor), Antialiased = true };
-            for (int i = 0; i < sketch.Points.Length; i += 2) line.AddPoint(new Vector2(sketch.Points[i], sketch.Points[i + 1]));
-            overlay.AddChild(line);
+            overlay = new SpectatorNativeInk { Name = "SpectatorInk", Size = native.Size };
+            overlay.InitializeInk();
+            native.GetParent().AddChild(overlay);
         }
+        overlay.Sync(map, _ink, InkColor, RunManager.Instance.DebugOnlyGetState()?.CurrentActIndex ?? -1);
+    }
+
+    // 同一笔画只更新已有轨迹，序号拒绝重复、延迟到达的旧片段。
+    // Update a stroke in place and reject duplicate or late revisions.
+    private bool ApplySketch(Sketch sketch)
+    {
+        int index = sketch.Stroke.Length > 0 ? _ink.FindIndex(line => line.Stroke == sketch.Stroke) : -1;
+        if (index >= 0)
+        {
+            if (_ink[index].Revision >= sketch.Revision || !_ink[index].Live && sketch.Live) return false;
+            _ink[index] = sketch;
+        }
+        else
+        {
+            if (_ink.Count >= 64 || sketch.Stroke.Length == 0 && _ink.Any(line => line.Points.SequenceEqual(sketch.Points))) return false;
+            _ink.Add(sketch);
+        }
+        return true;
     }
 
     private void ResetInk() { _ink.Clear(); if (!ReplayRunning && RunManager.Instance.IsInProgress) SyncNativeInk(); }

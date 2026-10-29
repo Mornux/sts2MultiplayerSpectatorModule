@@ -61,13 +61,12 @@ public partial class SpectatorSession
         else if (IsHost && sender == _viewer && packet.Token == _viewerToken && packet.Kind is "draw" or "erase")
         {
             var sketch = JsonSerializer.Deserialize<Sketch>(packet.Text);
-            if (_time - _lastSketch < 0.1 || !ValidSketch(sketch, _mapKey, _mapAct)) return;
+            if (!ValidSketch(sketch, _mapKey, _mapAct) || sketch!.Live && _time - _lastSketch < 0.035) return;
             _lastSketch = _time;
             if (packet.Kind == "erase") _ink.RemoveAll(line => HitsSketch(line, sketch!.Points[0], sketch.Points[1]));
             else
             {
-                if (_ink.Count >= 64) return;
-                _ink.Add(sketch!);
+                if (!ApplySketch(sketch!)) return;
             }
             SyncNativeInk();
             RelayInk(packet.Kind == "erase" ? "erase-ink" : "ink", packet.Text);
@@ -103,12 +102,10 @@ public partial class SpectatorSession
                 var sketch = JsonSerializer.Deserialize<Sketch>(packet.Text);
                 if (!ValidSketch(sketch, packet.Token, act)) return;
                 if (_mapKey != packet.Token) { ResetInk(); _mapKey = packet.Token; }
-                if (packet.Kind == "ink" && _ink.Any(line => line.Key == sketch!.Key && line.Act == sketch.Act && line.Points.SequenceEqual(sketch.Points))) return;
                 if (packet.Kind == "erase-ink") _ink.RemoveAll(line => HitsSketch(line, sketch!.Points[0], sketch.Points[1]));
                 else
                 {
-                    if (_ink.Count >= 64) return;
-                    _ink.Add(sketch!);
+                    if (!ApplySketch(sketch!)) return;
                 }
             }
             SyncNativeInk();

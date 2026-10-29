@@ -43,6 +43,7 @@ internal static class SpectatorPlayerInkColor
 {
     private static void Postfix(NMapDrawings __instance, Player player, Line2D __result)
     {
+        if (__instance is SpectatorNativeInk spectator) { __result.DefaultColor = spectator.StrokeColor; return; }
         if (SpectatorMap.Find(__instance)?.InkColor(player.NetId) is { } color) __result.DefaultColor = color;
     }
 }

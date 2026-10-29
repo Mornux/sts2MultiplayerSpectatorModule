@@ -17,6 +17,9 @@ public partial class SpectatorMap
     private readonly List<Vector2> _stroke = new();
     private Sketch[] _shownInk = Array.Empty<Sketch>();
     private DrawingMode _strokeMode;
+    private string _strokeId = "";
+    private long _strokeRevision;
+    private ulong _lastStrokeSend;
     private ulong _lastSound, _lastErase;
     private SpectatorCombat.PlayerInk[] _playerInk = Array.Empty<SpectatorCombat.PlayerInk>();
     private int _playerInkVersion, _shownPlayerInkVersion;
@@ -46,6 +49,8 @@ public partial class SpectatorMap
     internal void BeginStroke(Vector2 position, DrawingMode? mode)
     {
         _stroke.Clear();
+        _strokeId = Guid.NewGuid().ToString("N"); _strokeRevision = 0;
+        _lastStrokeSend = 0;
         _strokeMode = mode ?? _native!.Drawings.GetLocalDrawingMode();
         ExtendStroke(position);
     }
@@ -62,16 +67,19 @@ public partial class SpectatorMap
         else if (_stroke.Count == 0 || _stroke[^1].DistanceTo(point) >= 6)
         {
             _stroke.Add(point);
-            if (_stroke.Count >= 96) { SubmitStroke(); _stroke.Add(point); }
+            if (_stroke.Count >= 96)
+            { SubmitStroke(); _strokeId = Guid.NewGuid().ToString("N"); _strokeRevision = 0; _stroke.Add(point); }
+            else if (_stroke.Count >= 2 && Time.GetTicksMsec() - _lastStrokeSend >= 50)
+            { _lastStrokeSend = Time.GetTicksMsec(); SubmitStroke(true); }
         }
     }
 
-    private void SubmitStroke()
+    private void SubmitStroke(bool live = false)
     {
         var points = new float[_stroke.Count * 2];
         for (int i = 0; i < _stroke.Count; i++) { points[i * 2] = _stroke[i].X; points[i * 2 + 1] = _stroke[i].Y; }
-        _stroke.Clear();
-        if (points.Length >= 4 && _key == _session.Map?.Key) _session.SubmitSketch(points);
+        if (!live) _stroke.Clear();
+        if (points.Length >= 4 && _key == _session.Map?.Key) _session.SubmitSketch(points, _strokeId, ++_strokeRevision, live);
     }
 
     internal void EndStroke()
