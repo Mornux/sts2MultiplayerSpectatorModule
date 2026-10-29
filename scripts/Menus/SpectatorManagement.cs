@@ -1,0 +1,94 @@
+using Godot;
+using MegaCrit.Sts2.addons.mega_text;
+using MegaCrit.Sts2.Core.Nodes;
+using MegaCrit.Sts2.Core.Nodes.Multiplayer;
+using MegaCrit.Sts2.Core.Nodes.Screens.Map;
+using MegaCrit.Sts2.Core.Nodes.Screens.PauseMenu;
+using MegaCrit.Sts2.Core.Nodes.Screens.ScreenContext;
+using Steamworks;
+using MegaCrit.Sts2.Core.Platform.Steam;
+
+namespace sts2MultiplayerSpectatorModule.Scripts;
+
+// 管理观众并显示观战头像。
+// Manage viewers and display spectator portraits.
+
+public partial class SpectatorPanel
+{
+    private string _managementState = "";
+    private Control? _badge;
+    private MegaLabel? _badgeName;
+    private ulong _badgeId;
+
+    // 管理页面复用原生好友列表、返回按钮和蓝色操作按钮。
+    // Reuse the native friends panel, back button, and blue action button for management.
+    public void OpenManagement(NPauseMenu menu)
+    {
+        if (!_session.IsHost) return;
+        _managementScreen = CreateScreen("SpectatorManagement");
+        Push(menu, _managementScreen);
+    }
+
+    private void RefreshManagement()
+    {
+        if (_managementScreen == null) return;
+        var toggle = _managementScreen.GetNode<Control>("%RefreshButton");
+        toggle.OffsetLeft = -250;
+        toggle.OffsetRight = 250;
+        toggle.GetNode<MegaLabel>("Label").SetTextAutoSize(_session.AllowSpectators ? L.T("management.enabled") : L.T("management.disabled"));
+        var container = ClearList(_managementScreen, L.T("management.empty")
+            + (_session.IsLocalHost ? "\n" + _session.LocalHostStatus : ""), !_session.HasViewer);
+        if (_session.HasViewer)
+            AddFriend(container, _session.ViewerId, L.T("management.kick"), _session.KickViewer);
+        ActiveScreenContext.Instance.Update();
+    }
+
+    // 只复制原生头像和名字控件，作为列表旁的独立展示，不伪造玩家。
+    // Copy native portrait and name controls as a separate display without faking a player.
+    private void UpdateBadge()
+    {
+        var players = NRun.Instance?.GlobalUi?.MultiplayerPlayerContainer;
+        if (players == null || _session.DisplayViewerId == 0)
+        {
+            if (GodotObject.IsInstanceValid(_badge)) _badge!.Hide();
+            return;
+        }
+        if (!GodotObject.IsInstanceValid(_badge) || _badge!.GetParent() != players.GetParent())
+        {
+            if (GodotObject.IsInstanceValid(_badge)) _badge!.QueueFree();
+            _badge = new Control { Name = "SpectatorBadge", MouseFilter = Control.MouseFilterEnum.Ignore, Size = new Vector2(280, 64) };
+            var template = ResourceLoader.Load<PackedScene>("res://scenes/ui/multiplayer_player_state.tscn").Instantiate<Control>();
+            var icon = (TextureRect)template.GetNode<TextureRect>("%CharacterIcon").Duplicate();
+            foreach (var child in icon.GetChildren()) { icon.RemoveChild(child); child.Free(); }
+            icon.UniqueNameInOwner = false;
+            icon.MouseFilter = Control.MouseFilterEnum.Ignore;
+            icon.Texture = ResourceLoader.Load<Texture2D>("res://images/ui/top_panel/character_icon_defect.png");
+            _badgeName = (MegaLabel)template.GetNode<MegaLabel>("%NameplateLabel").Duplicate();
+            _badgeName.UniqueNameInOwner = false;
+            _badgeName.MouseFilter = Control.MouseFilterEnum.Ignore;
+            _badgeName.Position = new Vector2(67, 6);
+            _badgeName.Size = new Vector2(210, 32);
+            _badge.AddChild(icon);
+            _badge.AddChild(_badgeName);
+            var caption = (MegaLabel)_badgeName.Duplicate();
+            caption.Position = new Vector2(67, 34);
+            caption.Text = L.T("common.watching");
+            _badge.AddChild(caption);
+            template.Free();
+            players.GetParent().AddChild(_badge);
+        }
+        ulong id = _session.DisplayViewerId;
+        if (_badgeId != id)
+        {
+            _badgeId = id;
+            if (SteamInitializer.Initialized && !SpectatorLocal.IsLocal(id))
+                SteamFriends.RequestUserInformation(new CSteamID(id), true);
+        }
+        _badgeName!.SetTextAutoSize(_session.PlayerName(id));
+        float bottom = players.GetChildren().OfType<NMultiplayerPlayerState>()
+            .Select(player => player.Position.Y + Math.Max(player.Size.Y, 64)).DefaultIfEmpty(0).Max();
+        _badge!.Position = players.Position + new Vector2(0, bottom + 8);
+        _badge.Modulate = players.Modulate;
+        _badge.Visible = players.IsVisibleInTree() && NMapScreen.Instance?.IsOpen == true;
+    }
+}
