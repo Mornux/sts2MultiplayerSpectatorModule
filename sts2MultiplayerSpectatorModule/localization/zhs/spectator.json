@@ -90,8 +90,14 @@
   "local.listen_failed": "本地观战端口 {0} 无法监听，请检查端口占用。",
   "local.port": "本地观战端口：{0}",
   "status.watching": "观战中 · 第 {0} 幕 · 第 {1} 层 · 房主当前：{2}",
-  "events.sphere": "剩余预知次数：{0}\n■ 未揭开　· 空格　★ 已发现道具\n只读示意，不复制小游戏动画或奖励界面。",
+  "events.sphere": "剩余预知次数：{0}\n未揭开　· 空格　★ 已发现道具\n只读示意，不复制小游戏动画或奖励界面。",
   "events.voters": "\n[blue]投票：{0}[/blue]",
   "activity.choice": "{0} 选择了 {1} 选项",
-  "activity.obtain": "{0} 获得了 {1}"
+  "activity.obtain": "{0} 获得了 {1}",
+  "settings.chat_display": "弹幕显示方式",
+  "settings.chat_scroll": "屏幕滚动",
+  "settings.chat_log": "左下角消息栏",
+  "activity.gold": "{0} 获得了 {1} 金币",
+  "activity.upgrade": "{0} 升级了 {1}",
+  "activity.enchant": "{0} 附魔了 {1}"
 }

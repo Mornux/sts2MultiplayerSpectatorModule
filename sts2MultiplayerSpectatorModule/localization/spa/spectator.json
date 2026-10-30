@@ -93,5 +93,11 @@
   "events.sphere": "Adivinaciones restantes: {0}\n■ Oculto　· Vacío　★ Objeto descubierto\nEsquema de solo lectura; no se reproducen las animaciones ni las recompensas del minijuego.",
   "events.voters": "\n[blue]Votos: {0}[/blue]",
   "activity.choice": "{0} ha elegido {1}",
-  "activity.obtain": "{0} ha obtenido {1}"
+  "activity.obtain": "{0} ha obtenido {1}",
+  "settings.chat_display": "Mostrar mensajes",
+  "settings.chat_scroll": "Desplazamiento en pantalla",
+  "settings.chat_log": "Registro inferior izquierdo",
+  "activity.gold": "{0} ha obtenido {1} de oro",
+  "activity.upgrade": "{0} ha mejorado {1}",
+  "activity.enchant": "{0} ha encantado {1}"
 }

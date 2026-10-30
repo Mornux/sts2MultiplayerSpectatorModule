@@ -93,5 +93,11 @@
   "events.sphere": "จำนวนครั้งที่ทำนายได้อีก: {0}\n■ ยังไม่เปิด　· ว่าง　★ พบไอเทม\nแผนภาพสำหรับดูเท่านั้น ไม่เล่นภาพเคลื่อนไหวหรือหน้ารางวัลของมินิเกมซ้ำ",
   "events.voters": "\n[blue]โหวต: {0}[/blue]",
   "activity.choice": "{0} เลือก {1}",
-  "activity.obtain": "{0} ได้รับ {1}"
+  "activity.obtain": "{0} ได้รับ {1}",
+  "settings.chat_display": "การแสดงข้อความ",
+  "settings.chat_scroll": "เลื่อนผ่านหน้าจอ",
+  "settings.chat_log": "ช่องข้อความมุมซ้ายล่าง",
+  "activity.gold": "{0} ได้รับทอง {1}",
+  "activity.upgrade": "{0} อัปเกรด {1}",
+  "activity.enchant": "{0} เสริมมนตร์ให้ {1}"
 }

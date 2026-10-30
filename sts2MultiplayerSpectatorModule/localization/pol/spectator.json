@@ -93,5 +93,11 @@
   "events.sphere": "Pozostałe wróżby: {0}\n■ Zakryte　· Puste　★ Znaleziony przedmiot\nSchemat tylko do podglądu; animacje i nagrody minigry nie są odtwarzane.",
   "events.voters": "\n[blue]Głosy: {0}[/blue]",
   "activity.choice": "{0}: wybrano {1}",
-  "activity.obtain": "{0}: otrzymano {1}"
+  "activity.obtain": "{0}: otrzymano {1}",
+  "settings.chat_display": "Wyświetlanie wiadomości",
+  "settings.chat_scroll": "Przewijanie na ekranie",
+  "settings.chat_log": "Dziennik w lewym dolnym rogu",
+  "activity.gold": "{0} zdobywa {1} złota",
+  "activity.upgrade": "{0} ulepsza {1}",
+  "activity.enchant": "{0} zaklina {1}"
 }

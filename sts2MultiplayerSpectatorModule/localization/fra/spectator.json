@@ -93,5 +93,11 @@
   "events.sphere": "Divinations restantes : {0}\n■ Caché　· Vide　★ Objet trouvé\nSchéma en lecture seule ; animations et récompenses du mini-jeu non rejouées.",
   "events.voters": "\n[blue]Votes : {0}[/blue]",
   "activity.choice": "{0} a choisi {1}",
-  "activity.obtain": "{0} a obtenu {1}"
+  "activity.obtain": "{0} a obtenu {1}",
+  "settings.chat_display": "Affichage des messages",
+  "settings.chat_scroll": "Défilement à l’écran",
+  "settings.chat_log": "Journal en bas à gauche",
+  "activity.gold": "{0} a gagné {1} pièces d’or",
+  "activity.upgrade": "{0} a amélioré {1}",
+  "activity.enchant": "{0} a enchanté {1}"
 }

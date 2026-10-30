@@ -93,5 +93,11 @@
   "events.sphere": "Divinazioni rimaste: {0}\n■ Nascosto　· Vuoto　★ Oggetto trovato\nSchema di sola lettura; animazioni e ricompense del minigioco non riprodotte.",
   "events.voters": "\n[blue]Voti: {0}[/blue]",
   "activity.choice": "{0} ha scelto {1}",
-  "activity.obtain": "{0} ha ottenuto {1}"
+  "activity.obtain": "{0} ha ottenuto {1}",
+  "settings.chat_display": "Visualizzazione messaggi",
+  "settings.chat_scroll": "Scorrimento sullo schermo",
+  "settings.chat_log": "Registro in basso a sinistra",
+  "activity.gold": "{0} ha ottenuto {1} oro",
+  "activity.upgrade": "{0} ha potenziato {1}",
+  "activity.enchant": "{0} ha incantato {1}"
 }

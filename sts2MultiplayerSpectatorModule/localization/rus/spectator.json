@@ -93,5 +93,11 @@
   "events.sphere": "Осталось предсказаний: {0}\n■ Скрыто　· Пусто　★ Предмет найден\nСхема только для просмотра; анимации и награды мини-игры не воспроизводятся.",
   "events.voters": "\n[blue]Голоса: {0}[/blue]",
   "activity.choice": "{0} — выбор: {1}",
-  "activity.obtain": "{0} — получено: {1}"
+  "activity.obtain": "{0} — получено: {1}",
+  "settings.chat_display": "Отображение сообщений",
+  "settings.chat_scroll": "Прокрутка по экрану",
+  "settings.chat_log": "Журнал внизу слева",
+  "activity.gold": "{0} получает {1} золота",
+  "activity.upgrade": "{0} улучшает {1}",
+  "activity.enchant": "{0} зачаровывает {1}"
 }

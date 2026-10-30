@@ -93,5 +93,11 @@
   "events.sphere": "Verbleibende Weissagungen: {0}\n■ Verdeckt　· Leer　★ Gegenstand entdeckt\nNur Ansicht; Animationen und Belohnungen des Minispiels werden nicht wiedergegeben.",
   "events.voters": "\n[blue]Stimmen: {0}[/blue]",
   "activity.choice": "{0} hat {1} gewählt",
-  "activity.obtain": "{0} hat {1} erhalten"
+  "activity.obtain": "{0} hat {1} erhalten",
+  "settings.chat_display": "Nachrichtenanzeige",
+  "settings.chat_scroll": "Über den Bildschirm scrollen",
+  "settings.chat_log": "Nachrichten unten links",
+  "activity.gold": "{0} hat {1} Gold erhalten",
+  "activity.upgrade": "{0} hat {1} verbessert",
+  "activity.enchant": "{0} hat {1} verzaubert"
 }

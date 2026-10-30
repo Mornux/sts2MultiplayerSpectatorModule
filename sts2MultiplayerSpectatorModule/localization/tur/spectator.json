@@ -93,5 +93,11 @@
   "events.sphere": "Kalan kehanetler: {0}\n■ Gizli　· Boş　★ Eşya bulundu\nSalt okunur şema; mini oyun animasyonları ve ödülleri yeniden oynatılmaz.",
   "events.voters": "\n[blue]Oylar: {0}[/blue]",
   "activity.choice": "{0}, {1} seçeneğini seçti",
-  "activity.obtain": "{0}, {1} elde etti"
+  "activity.obtain": "{0}, {1} elde etti",
+  "settings.chat_display": "Mesaj görünümü",
+  "settings.chat_scroll": "Ekranda kayan yazı",
+  "settings.chat_log": "Sol alt mesaj günlüğü",
+  "activity.gold": "{0}, {1} altın kazandı",
+  "activity.upgrade": "{0}, {1} kartını geliştirdi",
+  "activity.enchant": "{0}, {1} kartını büyüledi"
 }

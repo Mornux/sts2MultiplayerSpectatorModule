@@ -93,5 +93,11 @@
   "events.sphere": "残りの予知回数：{0}\n■ 未開封　· 空白　★ アイテム発見\n閲覧専用の図です。ミニゲームの演出や報酬画面は再現しません。",
   "events.voters": "\n[blue]投票：{0}[/blue]",
   "activity.choice": "{0}が{1}を選択しました",
-  "activity.obtain": "{0}が{1}を獲得しました"
+  "activity.obtain": "{0}が{1}を獲得しました",
+  "settings.chat_display": "メッセージの表示方法",
+  "settings.chat_scroll": "画面を流れる表示",
+  "settings.chat_log": "左下のメッセージ欄",
+  "activity.gold": "{0}が{1}ゴールドを獲得しました",
+  "activity.upgrade": "{0}が{1}をアップグレードしました",
+  "activity.enchant": "{0}が{1}をエンチャントしました"
 }
