@@ -3,7 +3,7 @@
   "name": "STS2 Multiplayer Spectator Module",
   "author": "Mornux",
   "description": "Multiplayer spectator module for Slay the Spire 2.",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "min_game_version": "0.0.0",
   "has_pck": false,
   "has_dll": true,
