@@ -68,7 +68,7 @@ public partial class SpectatorCombat
             _loading = false;
             ConfigureCombatUi();
             _map.SetCombatAvailable(!_liveCombatEnded);
-            if (!_liveCombatEnded) _map.Hide();
+            if (!_liveCombatEnded) await SwitchAutomatic(() => { if (!_liveCombatEnded) _map.Hide(); }, generation);
         }
         catch (Exception error) { Fail(L.T("combat.load_failed") + error.Message); }
     }

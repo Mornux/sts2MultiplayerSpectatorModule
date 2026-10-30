@@ -50,17 +50,27 @@ public partial class SpectatorDanmaku
 
     private static string EscapeLog(string text) => text.Replace("[", "[lb]");
     private void ReceiveActivity(ActivityNotice notice) => AppendLog(L.T(
-        notice.Action is "choice" or "选择了" ? "activity.choice" : "activity.obtain", EscapeLog(notice.Name),
+        notice.Action switch
+        {
+            "choice" or "选择了" => "activity.choice",
+            "gold" => "activity.gold",
+            "upgrade" => "activity.upgrade",
+            "enchant" => "activity.enchant",
+            _ => "activity.obtain"
+        }, EscapeLog(notice.Name),
         "[color=#" + notice.Color + "]" + EscapeLog(notice.Text) + "[/color]"));
-    private void RecordChat(SpectatorSession.Danmaku message) => AppendLog(
-        "[color=#" + message.Color + "]" + EscapeLog(message.Name) + "[/color]：" + EscapeLog(message.Text));
+    private void RecordChat(SpectatorSession.Danmaku message) => AppendMessage(
+        "[color=#" + message.Color + "]" + EscapeLog(message.Name) + "[/color]：" + EscapeLog(message.Text), transient: !DanmakuSettings.Scrolling);
 
-    private void AppendLog(string text)
+    private void AppendLog(string text) => AppendMessage(text, true);
+
+    private void AppendMessage(string text, bool transient)
     {
         UpdateLog(0);
         if (_history.Count >= 100) _history.Dequeue();
         _history.Enqueue(text);
         if (IsEditing) _archive.Text = string.Join('\n', _history);
+        if (!transient) { RefreshLog(); return; }
         var label = LogLabel(true);
         label.Text = text;
         _transient.AddChild(label);

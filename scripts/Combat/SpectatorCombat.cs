@@ -55,7 +55,7 @@ public partial class SpectatorCombat : Node
         RunManager.Instance.ActionExecutor.Unpause();
         _liveCombatEnded = true;
         _map.SetCombatAvailable(false);
-        _map.Show();
+        if (!_map.Visible) TaskHelper.RunSafely(SwitchAutomatic(_map.Show, _generation));
     }
 
     private void Fail(string message)
@@ -78,9 +78,12 @@ public partial class SpectatorCombat : Node
     {
         if (_closing) return;
         _closing = true;
+        await _automaticSwitch;
+        if (_session.Watching && _started && !_map.Visible)
+            await SwitchAutomatic(_map.Show, _generation);
         ++_generation;
         _map.SetCombatAvailable(false);
-        _map.Hide();
+        if (!_session.Watching) _map.Hide();
         if (_combat.Length != 0) _finished.Add(_combat);
         if (_finished.Count > 32) _finished.Remove(_finished.First());
         _events.Clear();
@@ -144,3 +147,4 @@ public partial class SpectatorCombat : Node
         if (Instance == this) Instance = null;
     }
 }
+

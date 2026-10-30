@@ -9,6 +9,7 @@ using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
+using MegaCrit.Sts2.Core.Nodes.Screens.ScreenContext;
 using MegaCrit.Sts2.Core.Runs;
 
 namespace sts2MultiplayerSpectatorModule.Scripts;
@@ -33,23 +34,30 @@ public partial class SpectatorCombat
             var old = room.Ui;
             string path = old.SceneFilePath;
             var parent = old.GetParent();
+            int uiIndex = old.GetIndex();
             var ui = ResourceLoader.Load<PackedScene>(path).Instantiate<NCombatUi>();
             old.Deactivate();
             parent.RemoveChild(old);
             old.QueueFree();
             SpectatorMap.Set(room, "Ui", ui);
             parent.AddChild(ui);
+            parent.MoveChild(ui, uiIndex);
             ui.Activate(CombatManager.Instance.DebugOnlyGetState()!);
             foreach (var card in _state.Players[_viewIndex].PlayerCombatState!.Hand.Cards)
                 ui.Hand.Add(NCard.Create(card)!);
             SpectatorMap.Call(ui.Hand, "RefreshLayout");
             var oldBar = _runNode.GlobalUi.TopBar;
             var bar = ResourceLoader.Load<PackedScene>(oldBar.SceneFilePath).Instantiate<NTopBar>();
+            // 保留跑局场景的鼠标穿透覆盖，否则透明顶部栏会拦住整个战斗界面。
+            // Preserve the run scene's input passthrough so the transparent top bar cannot block combat controls.
+            bar.MouseFilter = oldBar.MouseFilter;
             var barParent = oldBar.GetParent();
+            int barIndex = oldBar.GetIndex();
             barParent.RemoveChild(oldBar);
             oldBar.QueueFree();
             SpectatorMap.Set(_runNode.GlobalUi, "TopBar", bar);
             barParent.AddChild(bar);
+            barParent.MoveChild(bar, barIndex);
             bar.Initialize(_state);
             var relics = _runNode.GlobalUi.RelicInventory;
             SpectatorMap.Call(relics, "DisconnectPlayerEvents");
@@ -60,6 +68,10 @@ public partial class SpectatorCombat
             var combat = CombatManager.Instance.DebugOnlyGetState()!;
             NCombatRoom.PositionPlayersAndPets(nodes.Where(node => combat.Allies.Contains(node.Entity)).ToList(),
                 combat.Encounter!.GetCameraScaling(), combat.Encounter.FullyCenterPlayers);
+            // 重新绑定导航并通知原版激活流程，恢复牌堆和悬浮交互。
+            // Rebind navigation and refresh native activation for pile and hover interaction.
+            SpectatorMap.Call(room, "UpdateCreatureNavigation");
+            ActiveScreenContext.Instance.Update();
             ConfigureCombatUi();
         }
         catch (Exception error) { Fail(L.T("combat.switch_failed") + error.Message); }
@@ -113,20 +125,20 @@ public partial class SpectatorCombat
 
     public void ToggleMap()
     {
-        if (!HasCombat) return;
+        if (!HasCombat || !_automaticSwitch.IsCompleted) return;
         if (_map.Visible) HideMap(); else _map.Show();
     }
 
     public void OpenMenu()
     {
-        if (!HasCombat) return;
+        if (!HasCombat || !_automaticSwitch.IsCompleted) return;
         _map.Show();
         _map.SetPaused(true);
     }
 
     private void HideMap()
     {
-        if (HasCombat && _started && !_loading && !_liveCombatEnded) _map.Hide();
+        if (_automaticSwitch.IsCompleted && HasCombat && _started && !_loading && !_liveCombatEnded) _map.Hide();
     }
 
     public override void _Input(InputEvent input)

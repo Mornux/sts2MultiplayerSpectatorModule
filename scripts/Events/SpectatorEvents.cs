@@ -93,24 +93,15 @@ public partial class SpectatorEvents : Node
         catch (Exception error)
         {
             GD.PushWarning("[Spectator] Event page " + model.Id + ": " + error.Message);
-            return new(model.Owner!.NetId, _session.PlayerName(model.Owner.NetId), model.Id.ToString(), model.Id.Entry,
-                L.Wire("events.updating"), model.IsFinished, model.IsShared, [],
+            return GenericEventAdapter.Capture(model, local, _session.PlayerName(model.Owner!.NetId),
                 _choices.GetValueOrDefault(model.Owner.NetId)?.ToArray() ?? []);
         }
     }
     private EventPlayerState CapturePage(EventModel model, bool local)
     {
         var owner = model.Owner!;
-        int vote = model.IsShared && RunManager.Instance.EventSynchronizer?.Events.Contains(model) == true
-            ? (int?)RunManager.Instance.EventSynchronizer.GetPlayerVote(owner) ?? -1 : -1;
-        var options = model.CurrentOptions.Take(16).Select(option => new EventOptionState(option.TextKey,
-            Format(option.Title, model), Format(option.Description, model), option.IsLocked, option.Relic?.Icon.ResourcePath ?? "")).ToArray();
-        string portrait = "";
-        if (local && model.Node is MegaCrit.Sts2.Core.Nodes.Events.NEventLayout layout)
-            portrait = layout.GetNodeOrNull<TextureRect>("%Portrait")?.Texture?.ResourcePath ?? "";
-        var result = new EventPlayerState(owner.NetId, _session.PlayerName(owner.NetId), model.Id.ToString(),
-            Format(model.Title, model), Format(model.Description, model), model.IsFinished, model.IsShared, options,
-            _choices.GetValueOrDefault(owner.NetId)?.ToArray() ?? [], vote, portrait, LocalPage: local);
+        var result = GenericEventAdapter.Capture(model, local, _session.PlayerName(owner.NetId),
+            _choices.GetValueOrDefault(owner.NetId)?.ToArray() ?? []);
         return EventAdapters.Enrich(model, result, local);
     }
 

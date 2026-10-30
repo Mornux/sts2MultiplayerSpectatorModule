@@ -87,5 +87,9 @@ public partial class SpectatorMap
 [HarmonyPatch(typeof(NSettingsScreen), nameof(NSettingsScreen.OnSubmenuOpened))]
 internal static class SpectatorColorSettings
 {
-    private static void Postfix(NSettingsScreen __instance) => SpectatorMap.Find(__instance)?.AddColorSettings(__instance);
+    private static void Postfix(NSettingsScreen __instance)
+    {
+        DanmakuSettings.Add(__instance);
+        SpectatorMap.Find(__instance)?.AddColorSettings(__instance);
+    }
 }

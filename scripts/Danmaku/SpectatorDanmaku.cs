@@ -53,6 +53,7 @@ public partial class SpectatorDanmaku : CanvasLayer
 
     private void Receive(SpectatorSession.Danmaku message)
     {
+        if (!DanmakuSettings.Scrolling) return;
         if (_pending.Count >= 32) _pending.Dequeue();
         _pending.Enqueue(message);
     }
@@ -67,6 +68,13 @@ public partial class SpectatorDanmaku : CanvasLayer
         if (!_session.CanSendDanmaku)
         {
             CloseEditor();
+            _pending.Clear();
+            foreach (var label in _root.GetChildren().OfType<Label>()) label.QueueFree();
+            Array.Clear(_lanes);
+            return;
+        }
+        if (!DanmakuSettings.Scrolling)
+        {
             _pending.Clear();
             foreach (var label in _root.GetChildren().OfType<Label>()) label.QueueFree();
             Array.Clear(_lanes);

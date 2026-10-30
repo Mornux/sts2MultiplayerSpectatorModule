@@ -9,10 +9,10 @@ internal static class EventAdapters
 {
     internal static EventPlayerState Enrich(EventModel model, EventPlayerState state, bool local)
     {
+        if (model is CrystalSphere) return CrystalSphereEvent.Enrich(state);
         state = model switch
         {
             AncientEventModel ancient => AncientEvents.Enrich(ancient, state, local),
-            CrystalSphere sphere => CrystalSphereEvent.Enrich(sphere, state, local),
             FakeMerchant merchant => FakeMerchantEvent.Enrich(merchant, state),
             TheArchitect architect => TheArchitectEvent.Enrich(architect, state),
             PunchOff => PunchOffEvent.Enrich(state),

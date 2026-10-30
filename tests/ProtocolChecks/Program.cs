@@ -56,6 +56,15 @@ stream.Receive(first with { Token = new string('b', 32), Sequence = 2, Text = ne
 Check(notices.Count == 3, "Oversized notice payloads must not be delivered.");
 stream.Receive(first with { Token = new string('b', 32), Sequence = 2, Kind = "chat" });
 Check(notices.Count == 3, "Other message kinds must not enter the notice stream.");
+foreach (string action in new[] { "gold", "upgrade", "enchant" })
+{
+    var receiver = new ActivityMessageStream();
+    ActivityNotice? received = null;
+    receiver.Received += value => received = value;
+    var change = notice with { Action = action, Text = action == "gold" ? "25" : "Strike+ · Sharp" };
+    receiver.Receive(stream.Create(token, change)!);
+    Check(received == change, "Card changes and gold gains must survive the authenticated notice stream.");
+}
 
 var assembler = new BattleAssembler();
 var frame = new BattleFrame("begin", token, 0, 10, 0, 2, Convert.ToBase64String([1, 2]));

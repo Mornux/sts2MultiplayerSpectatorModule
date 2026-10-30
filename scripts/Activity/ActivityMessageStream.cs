@@ -13,7 +13,7 @@ internal sealed class ActivityMessageStream
     internal event Action<ActivityNotice>? Received;
 
     internal static bool IsValid(ActivityNotice? notice) => notice is
-        { Name.Length: > 0 and <= 80, Text.Length: > 0 and <= 500, Action: "choice" or "obtain" or "选择了" or "获得了" }
+        { Name.Length: > 0 and <= 80, Text.Length: > 0 and <= 500, Action: "choice" or "obtain" or "gold" or "upgrade" or "enchant" or "选择了" or "获得了" }
         && !notice.Name.Any(char.IsControl) && !notice.Text.Any(char.IsControl)
         && SpectatorWireProtocol.ValidColor(notice.Color);
 
