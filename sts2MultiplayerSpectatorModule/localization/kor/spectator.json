@@ -76,7 +76,7 @@
   "status.available": "관전 신청",
   "status.wait_map": "지도 대기 중",
   "status.rejected": "호스트가 관전을 비활성화했거나 요청을 거절했습니다.",
-  "status.full": "이 시험 버전은 관전자 한 명만 지원합니다.",
+  "status.full": "관전 인원이 가득 찼습니다(최대 4명).",
   "status.wait_ready": "호스트가 지도에서 이동할 수 있을 때까지 기다립니다…",
   "status.wait_init": "호스트의 지도 초기화가 끝나기를 기다립니다…",
   "status.choose_host": "플레이 중인 친구를 선택하여 관전을 신청하세요.",

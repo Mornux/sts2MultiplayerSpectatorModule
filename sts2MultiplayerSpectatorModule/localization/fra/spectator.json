@@ -76,7 +76,7 @@
   "status.available": "Demander à regarder",
   "status.wait_map": "En attente de la carte",
   "status.rejected": "L'hôte a désactivé l'observation ou refusé votre demande.",
-  "status.full": "Ce prototype ne prend en charge qu'un spectateur.",
+  "status.full": "Les places de spectateur sont complètes (4 maximum).",
   "status.wait_ready": "En attente d'une carte où l'hôte peut avancer…",
   "status.wait_init": "En attente de l'initialisation de la carte par l'hôte…",
   "status.choose_host": "Choisissez un ami en partie pour demander à regarder.",

@@ -76,7 +76,7 @@
   "status.available": "Solicitar observar",
   "status.wait_map": "Esperando al mapa",
   "status.rejected": "El anfitrión ha desactivado la observación o rechazado tu solicitud.",
-  "status.full": "Este prototipo solo admite un espectador.",
+  "status.full": "No quedan plazas de espectador (máximo 4).",
   "status.wait_ready": "Esperando a que el anfitrión pueda avanzar desde el mapa…",
   "status.wait_init": "Esperando a que el anfitrión termine de inicializar el mapa…",
   "status.choose_host": "Elige un amigo con una partida activa para solicitar observar.",

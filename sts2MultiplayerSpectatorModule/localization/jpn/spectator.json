@@ -76,7 +76,7 @@
   "status.available": "観戦を申請",
   "status.wait_map": "マップへの移行を待機中",
   "status.rejected": "ホストが観戦を無効にしたか、リクエストを拒否しました。",
-  "status.full": "この試作版では観戦者は1人までです。",
+  "status.full": "観戦枠が満員です（最大4人）。",
   "status.wait_ready": "ホストがマップで移動可能になるまで待っています…",
   "status.wait_init": "ホストのマップ初期化の完了を待っています…",
   "status.choose_host": "プレイ中のフレンドを選んで観戦を申請してください。",

@@ -76,7 +76,7 @@
   "status.available": "Zuschauen anfragen",
   "status.wait_map": "Warten auf die Karte",
   "status.rejected": "Der Host hat Zuschauer deaktiviert oder deine Anfrage abgelehnt.",
-  "status.full": "Dieser Prototyp unterstützt nur einen Zuschauer.",
+  "status.full": "Alle Zuschauerplätze sind belegt (maximal 4).",
   "status.wait_ready": "Warten, bis der Host auf der Karte weiterreisen kann…",
   "status.wait_init": "Warten, bis der Host die Karte initialisiert hat…",
   "status.choose_host": "Wähle einen Freund mit aktivem Lauf für eine Zuschaueranfrage.",

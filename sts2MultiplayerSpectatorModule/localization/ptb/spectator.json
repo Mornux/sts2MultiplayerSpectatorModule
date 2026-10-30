@@ -76,7 +76,7 @@
   "status.available": "Solicitar acesso",
   "status.wait_map": "Aguardando o mapa",
   "status.rejected": "O anfitrião desativou o modo espectador ou recusou sua solicitação.",
-  "status.full": "Este protótipo permite apenas um espectador.",
+  "status.full": "Vagas de espectador lotadas (máximo 4).",
   "status.wait_ready": "Aguardando o anfitrião chegar a um mapa em que possa avançar…",
   "status.wait_init": "Aguardando o anfitrião terminar de inicializar o mapa…",
   "status.choose_host": "Escolha um amigo com uma partida ativa para solicitar acesso.",

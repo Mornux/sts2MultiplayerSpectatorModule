@@ -76,7 +76,7 @@
   "status.available": "Richiedi di assistere",
   "status.wait_map": "In attesa della mappa",
   "status.rejected": "L'host ha disabilitato l'osservazione o rifiutato la richiesta.",
-  "status.full": "Questo prototipo supporta un solo spettatore.",
+  "status.full": "Posti spettatore esauriti (massimo 4).",
   "status.wait_ready": "In attesa che l'host raggiunga una mappa da cui può avanzare…",
   "status.wait_init": "In attesa che l'host completi l'inizializzazione della mappa…",
   "status.choose_host": "Scegli un amico in partita per richiedere di assistere.",

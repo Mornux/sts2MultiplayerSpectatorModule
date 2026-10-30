@@ -76,7 +76,7 @@
   "status.available": "可申请观战",
   "status.wait_map": "等待地图阶段",
   "status.rejected": "房主未开启观战，或已拒绝你的观战请求。",
-  "status.full": "雏形版本仅支持一名观众。",
+  "status.full": "观战人数已满（最多 4 人）。",
   "status.wait_ready": "等待房主进入可前进的地图界面……",
   "status.wait_init": "等待房主完成地图初始化……",
   "status.choose_host": "选择正在进行对局的好友申请观战。",

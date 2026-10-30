@@ -76,7 +76,7 @@
   "status.available": "Request spectating",
   "status.wait_map": "Waiting for the map",
   "status.rejected": "The host has disabled spectating or rejected your request.",
-  "status.full": "This prototype supports only one spectator.",
+  "status.full": "Spectator slots are full (maximum 4).",
   "status.wait_ready": "Waiting for the host to reach a travel-ready map…",
   "status.wait_init": "Waiting for the host to finish initializing the map…",
   "status.choose_host": "Choose a friend with an active run to request spectating.",

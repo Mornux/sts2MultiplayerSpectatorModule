@@ -76,7 +76,7 @@
   "status.available": "İzleme isteği gönder",
   "status.wait_map": "Harita bekleniyor",
   "status.rejected": "Ev sahibi izlemeyi kapattı veya isteğini reddetti.",
-  "status.full": "Bu prototip yalnızca bir izleyiciyi destekler.",
+  "status.full": "İzleyici kontenjanı dolu (en fazla 4).",
   "status.wait_ready": "Ev sahibinin haritada ilerleyebilmesi bekleniyor…",
   "status.wait_init": "Ev sahibinin haritayı başlatmayı bitirmesi bekleniyor…",
   "status.choose_host": "İzleme isteği göndermek için oyunda olan bir arkadaş seçin.",

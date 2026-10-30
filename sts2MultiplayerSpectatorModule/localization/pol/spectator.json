@@ -76,7 +76,7 @@
   "status.available": "Poproś o obserwację",
   "status.wait_map": "Oczekiwanie na mapę",
   "status.rejected": "Gospodarz wyłączył oglądanie lub odrzucił twoją prośbę.",
-  "status.full": "Ten prototyp obsługuje tylko jednego widza.",
+  "status.full": "Brak wolnych miejsc dla obserwatorów (maksymalnie 4).",
   "status.wait_ready": "Oczekiwanie, aż gospodarz będzie mógł ruszyć z mapy…",
   "status.wait_init": "Oczekiwanie na zakończenie inicjalizacji mapy przez gospodarza…",
   "status.choose_host": "Wybierz znajomego z aktywną rozgrywką, aby poprosić o obserwację.",
