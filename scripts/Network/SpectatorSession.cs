@@ -18,7 +18,6 @@ public partial class SpectatorSession : Node
     private string _token = "", _viewerToken = "", _discovery = "";
     private double _time, _tick, _heartbeat, _received, _viewerSeen;
     private long _sequence, _lastSequence;
-    private readonly HashSet<ulong> _blocked = new();
     private string _mapKey = Guid.NewGuid().ToString("N");
     private int _mapAct = -1;
     private RunState? _inkRun;
@@ -71,16 +70,17 @@ public partial class SpectatorSession : Node
         }
         Steam.Update();
         UpdateRelayService();
-        if (IsLocalHost && AllowSpectators || _local != null) Local.Update(IsLocalHost && AllowSpectators);
+        if (IsLocalHost || _local != null) Local.Update(IsLocalHost);
         if ((_tick += delta) < 0.5) return;
         _tick = 0;
+        foreach (var id in _requests.Where(pair => _time - pair.Value.Seen > 12).Select(pair => pair.Key).ToArray()) _requests.Remove(id);
         if (!ReplayRunning && RunManager.Instance.IsInProgress && _ink.Count > 0) SyncNativeInk();
 
         var run = IsHost ? RunManager.Instance.DebugOnlyGetState() : null;
         if (!ReferenceEquals(_run, run))
         {
             RemoveViewer(L.Wire("status.run_changed"));
-            _blocked.Clear();
+            _requests.Clear();
             _mapAct = -1;
             _run = run;
             _danmakuTimes.Clear();

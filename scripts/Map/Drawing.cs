@@ -20,7 +20,7 @@ public partial class SpectatorMap
     private string _strokeId = "";
     private long _strokeRevision;
     private ulong _lastStrokeSend;
-    private ulong _lastSound, _lastErase;
+    private ulong _lastSound;
     private SpectatorCombat.PlayerInk[] _playerInk = Array.Empty<SpectatorCombat.PlayerInk>();
     private int _playerInkVersion, _shownPlayerInkVersion;
     private string? _playerInkKey;
@@ -58,13 +58,7 @@ public partial class SpectatorMap
     internal void ExtendStroke(Vector2 position)
     {
         var point = ToMap(position);
-        if (_strokeMode == DrawingMode.Erasing)
-        {
-            if (Time.GetTicksMsec() - _lastErase < 120) return;
-            _lastErase = Time.GetTicksMsec();
-            _session.EraseSketchesAt(point.X, point.Y);
-        }
-        else if (_stroke.Count == 0 || _stroke[^1].DistanceTo(point) >= 6)
+        if (_stroke.Count == 0 || _stroke[^1].DistanceTo(point) >= 6)
         {
             _stroke.Add(point);
             if (_stroke.Count >= 96)
@@ -78,8 +72,9 @@ public partial class SpectatorMap
     {
         var points = new float[_stroke.Count * 2];
         for (int i = 0; i < _stroke.Count; i++) { points[i * 2] = _stroke[i].X; points[i * 2 + 1] = _stroke[i].Y; }
+        if (points.Length == 2 && _strokeMode == DrawingMode.Erasing) points = [points[0], points[1], points[0], points[1]];
         if (!live) _stroke.Clear();
-        if (points.Length >= 4 && _key == _session.Map?.Key) _session.SubmitSketch(points, _strokeId, ++_strokeRevision, live);
+        if (points.Length >= 4 && _key == _session.Map?.Key) _session.SubmitSketch(points, _strokeId, ++_strokeRevision, live, _strokeMode == DrawingMode.Erasing);
     }
 
     internal void EndStroke()
@@ -113,7 +108,7 @@ public partial class SpectatorMap
             }
             return line;
         }
-        player.lines.AddRange(_shownInk.Select(sketch => ConvertLine(sketch.Points)));
+        player.lines.AddRange(_shownInk.Select(sketch => ConvertLine(sketch.Points, sketch.Eraser)));
         var data = new SerializableMapDrawings { drawings = new() { player } };
         if (_playerInkKey == _session.Map?.Key)
             foreach (var author in _playerInk.GroupBy(line => line.PlayerId))

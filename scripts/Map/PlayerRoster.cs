@@ -44,7 +44,18 @@ public partial class SpectatorMap
             if (!_playerRows.TryGetValue(source.Id, out var row))
             {
                 var model = Player.CreateForNewRun(ModelDb.GetById<CharacterModel>(ModelId.Deserialize(source.CharacterId)), UnlockState.all, source.Id);
-                var root = new Control { Name = "Player" + source.Id, CustomMinimumSize = new Vector2(280, 64), MouseFilter = MouseFilterEnum.Ignore };
+                var (root, name, health) = RosterVisuals.Create(model.Character.IconTexture, withHealth: true);
+                root.Name = "Player" + source.Id;
+                // 保留原版动态选框，鼠标悬停和查看详情时使用同一动画。
+                // Reuse the native animated reticle for hover and inventory inspection.
+                var template = ResourceLoader.Load<PackedScene>("res://scenes/ui/multiplayer_player_state.tscn").Instantiate<Control>();
+                var reticle = (NSelectionReticle)template.GetNode("%SelectionReticle").Duplicate();
+                template.Free();
+                reticle.UniqueNameInOwner = false;
+                root.AddChild(reticle);
+                reticle.MouseFilter = MouseFilterEnum.Ignore;
+                root.MouseEntered += reticle.OnSelect;
+                root.MouseExited += () => { if (_inspectedPlayer != source.Id) reticle.OnDeselect(); };
                 root.MouseFilter = MouseFilterEnum.Stop;
                 ulong playerId = source.Id;
                 root.GuiInput += input =>
@@ -52,25 +63,8 @@ public partial class SpectatorMap
                     if (input is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
                     { OpenInventory(playerId); root.AcceptEvent(); }
                 };
-                var template = ResourceLoader.Load<PackedScene>("res://scenes/ui/multiplayer_player_state.tscn").Instantiate<Control>();
-                var icon = (TextureRect)template.GetNode<TextureRect>("%CharacterIcon").Duplicate();
-                foreach (var child in icon.GetChildren()) { icon.RemoveChild(child); child.Free(); }
-                icon.UniqueNameInOwner = false;
-                icon.MouseFilter = MouseFilterEnum.Ignore;
-                icon.Texture = model.Character.IconTexture;
-                var name = (MegaLabel)template.GetNode<MegaLabel>("%NameplateLabel").Duplicate();
-                name.UniqueNameInOwner = false;
-                name.Position = new Vector2(67, 6);
-                name.Size = new Vector2(210, 32);
-                var health = (NHealthBar)template.GetNode<NHealthBar>("%HealthBar").Duplicate();
-                health.UniqueNameInOwner = false;
-                root.AddChild(icon);
-                root.AddChild(name);
-                root.AddChild(health);
-                template.Free();
-                foreach (var child in root.FindChildren("*", owned: false).OfType<Control>()) child.MouseFilter = MouseFilterEnum.Ignore;
                 _playerList.AddChild(root);
-                health.SetCreature(model.Creature);
+                health!.SetCreature(model.Creature);
                 health.GetNode<Control>("%BlockContainer").Hide();
                 health.FadeOutHpLabel(0, 0);
                 row = new(root, model, name, health);

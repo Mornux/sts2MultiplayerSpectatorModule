@@ -1,5 +1,4 @@
 using System.Text.Json;
-using MegaCrit.Sts2.Core.Multiplayer;
 using MegaCrit.Sts2.Core.Runs;
 
 namespace sts2MultiplayerSpectatorModule.Scripts;
@@ -30,12 +29,13 @@ public partial class SpectatorSession
         }
         else if (packet.Kind == "watch")
         {
-            if (!IsHost || !AllowSpectators || !CanContactViewer(sender) || _blocked.Contains(sender))
+            if (!IsHost || !CanContactViewer(sender))
                 Send(sender, new(2, "end", packet.Token, L.Wire("status.rejected")));
             else if (_viewer != 0 && (_viewer != sender || _viewerToken != packet.Token))
                 Send(sender, new(2, "end", packet.Token, L.Wire("status.full")));
             else if (_viewer == sender && _viewerToken == packet.Token)
             { _viewerSeen = _time; UpdateViewerColor(packet.Color); }
+            else if (AwaitApproval(sender, packet)) return;
             else if (!CanEnter())
                 Send(sender, new(2, "wait", packet.Token, L.Wire("status.wait_ready")));
             else
@@ -46,6 +46,7 @@ public partial class SpectatorSession
                 if (snapshot == null)
                 { Send(sender, new(2, "wait", packet.Token, L.Wire("status.wait_init"))); return; }
                 _run = RunManager.Instance.DebugOnlyGetState();
+                _requests.Remove(sender);
                 _viewer = sender;
                 _viewerName = SpectatorLocal.IsLocal(sender) ? CleanName(packet.Name) : PlayerName(sender);
                 _viewerToken = packet.Token;
@@ -63,11 +64,7 @@ public partial class SpectatorSession
             var sketch = JsonSerializer.Deserialize<Sketch>(packet.Text);
             if (!ValidSketch(sketch, _mapKey, _mapAct) || sketch!.Live && _time - _lastSketch < 0.035) return;
             _lastSketch = _time;
-            if (packet.Kind == "erase") _ink.RemoveAll(line => HitsSketch(line, sketch!.Points[0], sketch.Points[1]));
-            else
-            {
-                if (!ApplySketch(sketch!)) return;
-            }
+            if (!ApplySketch(packet.Kind == "erase" ? sketch! with { Eraser = true } : sketch!)) return;
             SyncNativeInk();
             RelayInk(packet.Kind == "erase" ? "erase-ink" : "ink", packet.Text);
         }
@@ -76,8 +73,7 @@ public partial class SpectatorSession
             ResetInk();
             RelayInk("clear-ink", "");
         }
-        else if (RunManager.Instance.IsInProgress && RunManager.Instance.NetService is NetClientGameService rosterHost
-            && rosterHost.IsConnected && sender == rosterHost.HostNetId && packet.Kind == "roster")
+        else if (FromGameHost(sender) && packet.Kind == "roster")
         {
             if (ulong.TryParse(packet.Text, out ulong viewer))
             {
@@ -86,8 +82,7 @@ public partial class SpectatorSession
                 SyncNativeInk();
             }
         }
-        else if (RunManager.Instance.IsInProgress && RunManager.Instance.NetService is NetClientGameService client
-            && client.IsConnected && sender == client.HostNetId && packet.Kind is "ink" or "erase-ink" or "clear-ink" or "color")
+        else if (FromGameHost(sender) && packet.Kind is "ink" or "erase-ink" or "clear-ink" or "color")
         {
             if (ValidColor(packet.Color)) _remoteViewerColor = packet.Color.ToLowerInvariant();
             if (packet.Kind == "color") { SyncNativeInk(); return; }
@@ -102,14 +97,12 @@ public partial class SpectatorSession
                 var sketch = JsonSerializer.Deserialize<Sketch>(packet.Text);
                 if (!ValidSketch(sketch, packet.Token, act)) return;
                 if (_mapKey != packet.Token) { ResetInk(); _mapKey = packet.Token; }
-                if (packet.Kind == "erase-ink") _ink.RemoveAll(line => HitsSketch(line, sketch!.Points[0], sketch.Points[1]));
-                else
-                {
-                    if (!ApplySketch(sketch!)) return;
-                }
+                if (!ApplySketch(packet.Kind == "erase-ink" ? sketch! with { Eraser = true } : sketch!)) return;
             }
             SyncNativeInk();
         }
+        else if (packet.Kind == "leave" && _requests.TryGetValue(sender, out var pending) && pending.Token == packet.Token)
+            _requests.Remove(sender);
         else if (packet.Kind == "leave" && sender == _viewer && packet.Token == _viewerToken)
         {
             _viewer = 0;
@@ -129,7 +122,11 @@ public partial class SpectatorSession
                 Map = map;
                 _received = _time;
                 _lastSequence = packet.Sequence;
-                SetStatus(L.T("status.watching", map.Act + 1, map.Floor, map.Room));
+                // 房间枚举来自网络，显示时按观众语言解析，不直接输出英文标识。
+                // Translate network room identifiers in the viewer's language instead of displaying raw enums.
+                string room = Enum.TryParse<MegaCrit.Sts2.Core.Rooms.RoomType>(map.Room, out var type)
+                    && Enum.IsDefined(type) ? type.ToString() : "Unassigned";
+                SetStatus(L.T("status.watching", L.T("room." + room)));
             }
         }
     }

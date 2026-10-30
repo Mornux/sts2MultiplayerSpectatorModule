@@ -109,7 +109,6 @@ public partial class SpectatorSession
     public void KickViewer()
     {
         if (!IsHost || _viewer == 0) return;
-        _blocked.Add(_viewer);
         RemoveViewer(L.Wire("status.kicked"));
         ResetInk();
         RelayInk("clear-ink", "");

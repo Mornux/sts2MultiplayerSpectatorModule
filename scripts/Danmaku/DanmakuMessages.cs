@@ -41,13 +41,11 @@ public partial class SpectatorSession
         if (packet.Kind is not ("chat-send" or "chat")) return false;
         if (packet.Kind == "chat-send")
         {
-            if (IsHost && (sender == _viewer && packet.Token == _viewerToken
-                || ((NetHostGameService)RunManager.Instance.NetService).ConnectedPeers.Any(peer => peer.peerId == sender && peer.readyForBroadcasting)))
+            if ((IsHost && sender == _viewer && packet.Token == _viewerToken) || FromReadyPlayer(sender))
                 PublishDanmaku(sender, packet.Text);
         }
         else if (sender == _host && packet.Token == _token && Watching
-            || !ReplayRunning && RunManager.Instance.IsInProgress && RunManager.Instance.NetService is NetClientGameService client
-                && client.IsConnected && sender == client.HostNetId)
+            || !ReplayRunning && FromGameHost(sender))
         {
             if (_chatHost != sender || _chatToken != packet.Token) { _chatHost = sender; _chatToken = packet.Token; _lastChatSequence = 0; }
             if (packet.Sequence > 0 && packet.Sequence <= _lastChatSequence) return true;

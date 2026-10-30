@@ -111,6 +111,7 @@ public partial class SpectatorDanmaku
 
     private void UpdateLog(double delta)
     {
+        RefreshWatchRequests();
         _noticeTime += delta;
         string context = _session.MessageLogContext;
         if (_logContext != context)

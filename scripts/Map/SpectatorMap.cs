@@ -90,7 +90,22 @@ public partial class SpectatorMap : Control
         var background = new ColorRect { Color = new Color("10191e"), MouseFilter = MouseFilterEnum.Ignore };
         AddChild(background);
         background.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        _status = new Label { MouseFilter = MouseFilterEnum.Ignore, Position = new Vector2(24, 110) };
+        // 连接等待阶段也直接复用原版计时器文字，避免地图加载前落回默认字体。
+        // Reuse the native timer label even while connecting, before the map exists.
+        var template = ResourceLoader.Load<PackedScene>("res://scenes/ui/top_bar.tscn").Instantiate<Control>();
+        _status = (Label)template.GetNode("RightAlignedStuff/TimerContainer/TimerLabel").Duplicate();
+        foreach (var deck in template.FindChildren("*", owned: false).OfType<NTopBarDeckButton>()) deck.SetMeta("spectator_view", true);
+        template.Free();
+        _status.Name = "SpectatorStatus";
+        _status.UniqueNameInOwner = false;
+        _status.MouseFilter = MouseFilterEnum.Ignore;
+        _status.CustomMinimumSize = Vector2.Zero;
+        _status.SetAnchorsAndOffsetsPreset(LayoutPreset.TopLeft);
+        _status.Position = new Vector2(24, 110);
+        _status.Size = new Vector2(1600, 40);
+        _status.AddThemeFontSizeOverride("font_size", 24);
+        _status.AddThemeColorOverride("font_color", new Color(0.937255f, 0.784314f, 0.317647f));
+        _status.Text = "";
         AddChild(_status);
         _hoverTips = new Control { Name = "SpectatorHoverTips", MouseFilter = MouseFilterEnum.Ignore };
         AddChild(_hoverTips);

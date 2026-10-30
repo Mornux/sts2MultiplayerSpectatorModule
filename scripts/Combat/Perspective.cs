@@ -2,6 +2,7 @@ using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Context;
+using MegaCrit.Sts2.Core.Entities.UI;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Multiplayer;
 using MegaCrit.Sts2.Core.Nodes.Cards;
@@ -27,6 +28,10 @@ public partial class SpectatorCombat
         if (_runNode?.CombatRoom is not { } room || _state == null) return;
         try
         {
+            // 先按旧视角清理悬浮，防止退出回调操作到新视角的角色。
+            // Clear hover in the old context before callbacks can target the new perspective.
+            var nodes = (List<NCreature>)AccessTools.Field(typeof(NCombatRoom), "_creatureNodes").GetValue(room)!;
+            foreach (var node in nodes.Where(node => node.IsFocused)) SpectatorMap.Call(node, "OnUnfocus");
             _viewIndex = _pendingView;
             ulong playerId = _state.Players[_viewIndex].NetId;
             LocalContext.NetId = playerId;
@@ -64,8 +69,17 @@ public partial class SpectatorCombat
             ((System.Collections.IList)AccessTools.Field(relics.GetType(), "_relicNodes").GetValue(relics)!).Clear();
             foreach (var child in relics.GetChildren()) { relics.RemoveChild(child); child.QueueFree(); }
             relics.Initialize(_state);
-            var nodes = (List<NCreature>)AccessTools.Field(typeof(NCombatRoom), "_creatureNodes").GetValue(room)!;
             var combat = CombatManager.Instance.DebugOnlyGetState()!;
+            // 原版创建角色时缓存本地身份；切换后同步缓存，避免悬停自身时把自身状态隐藏。
+            // Refresh cached local identity so hovering the new viewpoint cannot hide its own state display.
+            foreach (var node in nodes.Where(node => node.Entity.IsPlayer || node.Entity.PetOwner != null))
+            {
+                bool remote = node.Entity.IsPlayer ? !LocalContext.IsMe(node.Entity) : !LocalContext.IsMe(node.Entity.PetOwner!);
+                SpectatorMap.Set(node, "_isRemotePlayerOrPet", remote);
+                var display = node.GetNode<NCreatureStateDisplay>("%HealthBar");
+                if (remote) display.HideImmediately();
+                else display.AnimateIn(HealthBarAnimMode.FromHidden);
+            }
             NCombatRoom.PositionPlayersAndPets(nodes.Where(node => combat.Allies.Contains(node.Entity)).ToList(),
                 combat.Encounter!.GetCameraScaling(), combat.Encounter.FullyCenterPlayers);
             // 重新绑定导航并通知原版激活流程，恢复牌堆和悬浮交互。
@@ -117,7 +131,17 @@ public partial class SpectatorCombat
 
     internal void UpdateTimer()
     {
-        if (_runNode == null || !GodotObject.IsInstanceValid(_runNode) || _session.Map == null) return;
+        if (_runNode == null || !GodotObject.IsInstanceValid(_runNode)) return;
+        // 原版列表按回放平台取名；改用观战会话，并随状态刷新迟到的 Steam 昵称。
+        // Resolve native roster names through the spectator session and refresh late Steam persona data.
+        if (_runNode.GlobalUi?.MultiplayerPlayerContainer is { } roster)
+            foreach (var row in roster.GetChildren().OfType<MegaCrit.Sts2.Core.Nodes.Multiplayer.NMultiplayerPlayerState>())
+            {
+                var label = row.GetNode<MegaCrit.Sts2.addons.mega_text.MegaLabel>("%NameplateLabel");
+                string name = _session.PlayerName(row.Player.NetId);
+                if (label.Text != name) label.SetTextAutoSize(name);
+            }
+        if (_session.Map == null) return;
         var timer = _runNode.GlobalUi?.TopBar?.Timer;
         if (timer == null) return;
         timer.Show();

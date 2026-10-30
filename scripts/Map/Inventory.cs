@@ -20,6 +20,7 @@ public partial class SpectatorMap
     private long _inventorySequence = -1;
     private Control? _inspection;
     private ColorRect? _inspectionBackstop;
+    private ulong? _inspectedPlayer;
 
     private void ReceiveInventory(string json)
     {
@@ -66,6 +67,8 @@ public partial class SpectatorMap
             _inspection = NMultiplayerPlayerExpandedState.Create(player);
             _hoverTips.AddChild(_inspection);
             _inspection.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+            _inspectedPlayer = id;
+            if (_playerRows.TryGetValue(id, out var selected)) selected.Root.GetNode<MegaCrit.Sts2.Core.Nodes.Combat.NSelectionReticle>("SelectionReticle").OnSelect();
             _inspection.GetNode<MegaCrit.Sts2.Core.Nodes.CommonUi.NBackButton>("%BackButton").Enable();
             _inspection.GetNode<MegaCrit.Sts2.addons.mega_text.MegaRichTextLabel>("%PlayerNameLabel").Text =
                 (_session.Map?.Players?.FirstOrDefault(item => item.Id == id)?.Name ?? "").Replace("[", "[lb]");
@@ -76,6 +79,9 @@ public partial class SpectatorMap
 
     internal void CloseInventory()
     {
+        if (_inspectedPlayer is { } id && _playerRows.TryGetValue(id, out var selected))
+            selected.Root.GetNode<MegaCrit.Sts2.Core.Nodes.Combat.NSelectionReticle>("SelectionReticle").OnDeselect();
+        _inspectedPlayer = null;
         if (_inspection != null) { _inspection.Hide(); _inspection.QueueFree(); _inspection = null; }
         if (_inspectionBackstop != null) { _inspectionBackstop.Hide(); _inspectionBackstop.QueueFree(); _inspectionBackstop = null; }
         ActiveScreenContext.Instance.Update();

@@ -46,7 +46,7 @@ public partial class SpectatorNativeInk : NMapDrawings
         for (int i = 0; !rebuild && i < _rendered.Count; i++)
         {
             var old = _rendered[i]; var next = lines[i];
-            rebuild = old.Key != next.Key || old.Stroke != next.Stroke || old.Points.Length > next.Points.Length
+            rebuild = old.Eraser != next.Eraser || old.Key != next.Key || old.Stroke != next.Stroke || old.Points.Length > next.Points.Length
                 || !old.Points.SequenceEqual(next.Points.Take(old.Points.Length))
                 || i < _rendered.Count - 1 && old.Points.Length != next.Points.Length;
         }
@@ -69,7 +69,7 @@ public partial class SpectatorNativeInk : NMapDrawings
             var previous = i < _rendered.Count ? _rendered[i] : null;
             int start = previous?.Points.Length ?? 2;
             if (previous == null)
-                SpectatorMap.Call(this, "BeginLine", _pen!, ConvertPoint(line.Points, 0), DrawingMode.Drawing);
+                SpectatorMap.Call(this, "BeginLine", _pen!, ConvertPoint(line.Points, 0), line.Eraser ? DrawingMode.Erasing : DrawingMode.Drawing);
             for (int point = start; point < line.Points.Length; point += 2)
                 SpectatorMap.Call(this, "UpdateCurrentLinePosition", _pen!, ConvertPoint(line.Points, point));
             if (!line.Live && (previous == null || previous.Live)) SpectatorMap.Call(this, "StopDrawingLine", _pen!);

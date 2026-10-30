@@ -16,7 +16,9 @@ public partial class SpectatorSession
     private string _viewerColor = "dca747", _remoteViewerColor = "dca747";
     public string DrawingColor { get; private set; } = "dca747";
     public string InkColor => Watching ? DrawingColor : IsHost ? _viewerColor : _remoteViewerColor;
-    public sealed record Sketch(string Key, int Act, float[] Points, string Stroke = "", long Revision = 0, bool Live = false);
+    // 橡皮和画笔共享轨迹同步，由原版减法材质实现局部擦除。
+    // Share stroke synchronization for pen and eraser; native subtractive material handles partial erasing.
+    public sealed record Sketch(string Key, int Act, float[] Points, string Stroke = "", long Revision = 0, bool Live = false, bool Eraser = false);
 
     // 颜色按 RGB 同步，改色也会更新已经画出的观众笔迹。
     // Synchronize RGB colors, including spectator strokes already on the map.
@@ -41,10 +43,10 @@ public partial class SpectatorSession
         && sketch.Stroke is { Length: 0 or 32 } && sketch.Revision is >= 0 and <= 1000000
         && (!sketch.Live || sketch.Stroke.Length == 32);
 
-    public void SubmitSketch(float[] points, string stroke = "", long revision = 0, bool live = false)
+    public void SubmitSketch(float[] points, string stroke = "", long revision = 0, bool live = false, bool eraser = false)
     {
         if (_host == 0 || Map == null) return;
-        var sketch = new Sketch(Map.Key, Map.Act, points, stroke, revision, live);
+        var sketch = new Sketch(Map.Key, Map.Act, points, stroke, revision, live, eraser);
         if (!ValidSketch(sketch, Map.Key, Map.Act)) return;
         if (!ApplySketch(sketch)) return;
         Send(_host, new(2, "draw", _token, JsonSerializer.Serialize(sketch)));
@@ -55,17 +57,6 @@ public partial class SpectatorSession
     {
         ResetInk();
         if (_host != 0) Send(_host, new(2, "clear", _token));
-        Updated?.Invoke();
-    }
-
-    // 橡皮移除命中的整条观战笔迹，不影响参战玩家的画线。
-    // Erase touched spectator strokes without altering participating players' ink.
-    public void EraseSketchesAt(float x, float y)
-    {
-        if (_host == 0 || Map == null || !float.IsFinite(x) || !float.IsFinite(y)) return;
-        if (_ink.RemoveAll(line => HitsSketch(line, x, y)) == 0) return;
-        var eraser = new Sketch(Map.Key, Map.Act, new[] { x, y, x, y });
-        Send(_host, new(2, "erase", _token, JsonSerializer.Serialize(eraser)));
         Updated?.Invoke();
     }
 
@@ -121,12 +112,12 @@ public partial class SpectatorSession
         int index = sketch.Stroke.Length > 0 ? _ink.FindIndex(line => line.Stroke == sketch.Stroke) : -1;
         if (index >= 0)
         {
-            if (_ink[index].Revision >= sketch.Revision || !_ink[index].Live && sketch.Live) return false;
+            if (_ink[index].Eraser != sketch.Eraser || _ink[index].Revision >= sketch.Revision || !_ink[index].Live && sketch.Live) return false;
             _ink[index] = sketch;
         }
         else
         {
-            if (_ink.Count >= 64 || sketch.Stroke.Length == 0 && _ink.Any(line => line.Points.SequenceEqual(sketch.Points))) return false;
+            if (_ink.Count >= 64 || sketch.Stroke.Length == 0 && _ink.Any(line => line.Eraser == sketch.Eraser && line.Points.SequenceEqual(sketch.Points))) return false;
             _ink.Add(sketch);
         }
         return true;

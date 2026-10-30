@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Godot;
+using MegaCrit.Sts2.Core.Multiplayer;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Runs;
 
@@ -11,6 +12,14 @@ public partial class SpectatorSession
     private SteamSpectatorTransport? _steam;
     private NativeGameRelay? _relay;
     private SteamSpectatorTransport Steam => _steam ??= new(IsPeer, ReceivePacket);
+
+    // 共用原版连接身份检查，消息各自保留令牌、序号和回放限制。
+    // Share native connection identity checks while keeping per-message token, sequence and replay guards.
+    private static bool FromGameHost(ulong sender) => RunManager.Instance.IsInProgress
+        && RunManager.Instance.NetService is NetClientGameService { IsConnected: true } client && sender == client.HostNetId;
+
+    private bool FromReadyPlayer(ulong sender) => IsHost && ((NetHostGameService)RunManager.Instance.NetService)
+        .ConnectedPeers.Any(peer => peer.peerId == sender && peer.readyForBroadcasting);
 
     private void Send(ulong peer, SpectatorPacket packet)
     {

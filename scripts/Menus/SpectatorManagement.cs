@@ -37,9 +37,11 @@ public partial class SpectatorPanel
         toggle.OffsetRight = 250;
         toggle.GetNode<MegaLabel>("Label").SetTextAutoSize(_session.AllowSpectators ? L.T("management.enabled") : L.T("management.disabled"));
         var container = ClearList(_managementScreen, L.T("management.empty")
-            + (_session.IsLocalHost ? "\n" + _session.LocalHostStatus : ""), !_session.HasViewer);
+            + (_session.IsLocalHost ? "\n" + _session.LocalHostStatus : ""), !_session.HasViewer && _session.Requests.Count == 0);
         if (_session.HasViewer)
             AddFriend(container, _session.ViewerId, L.T("management.kick"), _session.KickViewer);
+        foreach (var request in _session.Requests.ToArray())
+            AddFriend(container, request.Key, L.T("management.approve"), () => _session.ApproveViewer(request.Key), request.Value.Name);
         ActiveScreenContext.Instance.Update();
     }
 
@@ -61,26 +63,14 @@ public partial class SpectatorPanel
         if (!GodotObject.IsInstanceValid(_badge) || _badge!.GetParent() != badgeParent)
         {
             if (GodotObject.IsInstanceValid(_badge)) _badge!.QueueFree();
-            _badge = new Control { Name = "SpectatorBadge", MouseFilter = Control.MouseFilterEnum.Ignore,
-                Size = new Vector2(280, 64), CustomMinimumSize = new Vector2(280, 64) };
-            var template = ResourceLoader.Load<PackedScene>("res://scenes/ui/multiplayer_player_state.tscn").Instantiate<Control>();
-            var icon = (TextureRect)template.GetNode<TextureRect>("%CharacterIcon").Duplicate();
-            foreach (var child in icon.GetChildren()) { icon.RemoveChild(child); child.Free(); }
-            icon.UniqueNameInOwner = false;
-            icon.MouseFilter = Control.MouseFilterEnum.Ignore;
-            icon.Texture = ResourceLoader.Load<Texture2D>("res://images/ui/top_panel/character_icon_defect.png");
-            _badgeName = (MegaLabel)template.GetNode<MegaLabel>("%NameplateLabel").Duplicate();
-            _badgeName.UniqueNameInOwner = false;
-            _badgeName.MouseFilter = Control.MouseFilterEnum.Ignore;
-            _badgeName.Position = new Vector2(67, 6);
-            _badgeName.Size = new Vector2(210, 32);
-            _badge.AddChild(icon);
-            _badge.AddChild(_badgeName);
+            var visuals = RosterVisuals.Create(ResourceLoader.Load<Texture2D>("res://images/ui/top_panel/character_icon_defect.png"));
+            _badge = visuals.Root;
+            _badge.Name = "SpectatorBadge";
+            _badgeName = visuals.Name;
             var caption = (MegaLabel)_badgeName.Duplicate();
             caption.Position = new Vector2(67, 34);
             caption.Text = L.T("common.watching");
             _badge.AddChild(caption);
-            template.Free();
             badgeParent.AddChild(_badge);
         }
         if (_badgeId != id)

@@ -21,8 +21,7 @@ public partial class SpectatorSession
     private bool HandleEventPeer(ulong sender, SpectatorPacket packet)
     {
         if (packet.Kind != "event-local") return false;
-        if (IsHost && ((NetHostGameService)RunManager.Instance.NetService).ConnectedPeers
-            .Any(peer => peer.peerId == sender && peer.readyForBroadcasting)) EventPeerReceived?.Invoke(sender, packet.Text);
+        if (FromReadyPlayer(sender)) EventPeerReceived?.Invoke(sender, packet.Text);
         return true;
     }
 }
