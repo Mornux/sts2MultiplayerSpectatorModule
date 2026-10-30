@@ -12,13 +12,11 @@ namespace sts2MultiplayerSpectatorModule.Scripts;
 public partial class SpectatorSession
 {
     private readonly List<Sketch> _ink = new();
-    private double _lastSketch;
-    private string _viewerColor = "dca747", _remoteViewerColor = "dca747";
     public string DrawingColor { get; private set; } = "dca747";
-    public string InkColor => Watching ? DrawingColor : IsHost ? _viewerColor : _remoteViewerColor;
+    internal string AuthorColor(ulong id) => Watching && id == SelfViewerId ? DrawingColor : Roster.GetValueOrDefault(id)?.Color ?? DrawingColor;
     // 橡皮和画笔共享轨迹同步，由原版减法材质实现局部擦除。
     // Share stroke synchronization for pen and eraser; native subtractive material handles partial erasing.
-    public sealed record Sketch(string Key, int Act, float[] Points, string Stroke = "", long Revision = 0, bool Live = false, bool Eraser = false);
+    public sealed record Sketch(string Key, int Act, float[] Points, string Stroke = "", long Revision = 0, bool Live = false, bool Eraser = false, ulong Author = 0);
 
     // 颜色按 RGB 同步，改色也会更新已经画出的观众笔迹。
     // Synchronize RGB colors, including spectator strokes already on the map.
@@ -30,12 +28,11 @@ public partial class SpectatorSession
         if (_host != 0) Send(_host, new(2, "color", _token, Color: DrawingColor));
         Updated?.Invoke();
     }
-    private void UpdateViewerColor(string color)
+    private void UpdateViewerColor(ulong id, string color)
     {
-        if (!ValidColor(color) || _viewerColor == color.ToLowerInvariant()) return;
-        _viewerColor = color.ToLowerInvariant();
-        SyncNativeInk();
-        RelayInk("color", "");
+        if (!ValidColor(color) || !_viewers.TryGetValue(id, out var viewer) || viewer.Color == color.ToLowerInvariant()) return;
+        viewer.Color = color.ToLowerInvariant();
+        PublishRoster(); SyncNativeInk();
     }
     public static bool ValidSketch(Sketch? sketch, string key, int act) => sketch is { Points.Length: >= 4 and <= 192 }
         && sketch.Key == key && sketch.Act == act && sketch.Points.Length % 2 == 0
@@ -46,7 +43,7 @@ public partial class SpectatorSession
     public void SubmitSketch(float[] points, string stroke = "", long revision = 0, bool live = false, bool eraser = false)
     {
         if (_host == 0 || Map == null) return;
-        var sketch = new Sketch(Map.Key, Map.Act, points, stroke, revision, live, eraser);
+        var sketch = new Sketch(Map.Key, Map.Act, points, stroke, revision, live, eraser, SelfViewerId);
         if (!ValidSketch(sketch, Map.Key, Map.Act)) return;
         if (!ApplySketch(sketch)) return;
         Send(_host, new(2, "draw", _token, JsonSerializer.Serialize(sketch)));
@@ -55,7 +52,7 @@ public partial class SpectatorSession
 
     public void ClearSketches()
     {
-        ResetInk();
+        ClearAuthor(SelfViewerId);
         if (_host != 0) Send(_host, new(2, "clear", _token));
         Updated?.Invoke();
     }
@@ -82,7 +79,7 @@ public partial class SpectatorSession
             .Where(peer => peer.readyForBroadcasting).Select(peer => peer.peerId))
             if (peer != RunManager.Instance.NetService.NetId)
             {
-                var packet = new SpectatorPacket(2, kind, _mapKey, text, Name: _viewerName, Color: _viewerColor);
+                var packet = new SpectatorPacket(2, kind, _mapKey, text);
                 RunManager.Instance.NetService.SendMessage(new SpectatorLocalRelay
                     { Payload = JsonSerializer.Serialize(packet, WireJson) }, peer);
                 if (!IsLocalHost) Send(peer, packet);
@@ -95,21 +92,27 @@ public partial class SpectatorSession
     {
         var map = NMapScreen.Instance;
         if (map?.Drawings is not { } native) return;
-        var overlay = native.GetParent().GetNodeOrNull<SpectatorNativeInk>("SpectatorInk");
-        if (overlay == null)
+        var groups = _ink.GroupBy(line => line.Author).ToDictionary(group => group.Key, group => group.ToArray());
+        foreach (var overlay in native.GetParent().GetChildren().OfType<SpectatorNativeInk>())
+            if (!groups.ContainsKey(overlay.Author)) { overlay.GetParent().RemoveChild(overlay); overlay.QueueFree(); }
+        foreach (var group in groups)
         {
-            overlay = new SpectatorNativeInk { Name = "SpectatorInk", Size = native.Size };
-            overlay.InitializeInk();
-            native.GetParent().AddChild(overlay);
+            string name = "SpectatorInk" + group.Key;
+            var overlay = native.GetParent().GetNodeOrNull<SpectatorNativeInk>(name);
+            if (overlay == null)
+            {
+                overlay = new SpectatorNativeInk { Name = name, Author = group.Key, Size = native.Size };
+                overlay.InitializeInk(); native.GetParent().AddChild(overlay);
+            }
+            overlay.Sync(map, group.Value, AuthorColor(group.Key), RunManager.Instance.DebugOnlyGetState()?.CurrentActIndex ?? -1);
         }
-        overlay.Sync(map, _ink, InkColor, RunManager.Instance.DebugOnlyGetState()?.CurrentActIndex ?? -1);
     }
 
     // 同一笔画只更新已有轨迹，序号拒绝重复、延迟到达的旧片段。
     // Update a stroke in place and reject duplicate or late revisions.
     private bool ApplySketch(Sketch sketch)
     {
-        int index = sketch.Stroke.Length > 0 ? _ink.FindIndex(line => line.Stroke == sketch.Stroke) : -1;
+        int index = sketch.Stroke.Length > 0 ? _ink.FindIndex(line => line.Author == sketch.Author && line.Stroke == sketch.Stroke) : -1;
         if (index >= 0)
         {
             if (_ink[index].Eraser != sketch.Eraser || _ink[index].Revision >= sketch.Revision || !_ink[index].Live && sketch.Live) return false;
@@ -117,7 +120,7 @@ public partial class SpectatorSession
         }
         else
         {
-            if (_ink.Count >= 64 || sketch.Stroke.Length == 0 && _ink.Any(line => line.Eraser == sketch.Eraser && line.Points.SequenceEqual(sketch.Points))) return false;
+            if (_ink.Count(line => line.Author == sketch.Author) >= 64 || sketch.Stroke.Length == 0 && _ink.Any(line => line.Author == sketch.Author && line.Eraser == sketch.Eraser && line.Points.SequenceEqual(sketch.Points))) return false;
             _ink.Add(sketch);
         }
         return true;

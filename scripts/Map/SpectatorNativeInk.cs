@@ -24,6 +24,7 @@ public partial class SpectatorNativeInk : NMapDrawings
     private PeerInputSynchronizer _spectatorInput = null!;
     private object? _pen;
     private string _color = "";
+    internal ulong Author { get; set; }
     private Vector2 _lastSize;
     internal Color StrokeColor => new(_color);
 

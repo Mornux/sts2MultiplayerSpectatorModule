@@ -20,7 +20,7 @@ public partial class SpectatorCombat
     // Relay participant ink in map coordinates; spectator ink keeps its existing transport.
     private void HostInk()
     {
-        if (_inkViewer != _session.ViewerId) { _inkViewer = _session.ViewerId; _lastInk = ""; }
+        if (_inkViewer != _session.ViewerRevision) { _inkViewer = _session.ViewerRevision; _lastInk = ""; }
         // 背包不依赖地图是否打开，每秒同步一次。
         // Inventory updates once per second even while the host map is closed.
         if (Time.GetTicksMsec() - _inventorySentAt >= 1000)

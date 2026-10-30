@@ -38,6 +38,7 @@ public partial class SpectatorMap
     }
 
     internal Color? InkColor(ulong playerId) => playerId == DisplayPlayerId ? new Color(_session.DrawingColor)
+        : _session.Roster.ContainsKey(playerId) ? new Color(_session.AuthorColor(playerId))
         : Snapshot?.Players?.FirstOrDefault(player => player.Id == playerId) is { } player ? new Color(player.Color)
         : _playerInk.FirstOrDefault(line => line.PlayerId == playerId) is { } ink ? new Color(ink.Color) : null;
 
@@ -88,10 +89,11 @@ public partial class SpectatorMap
     private void RefreshInk(bool force = false)
     {
         if (_native == null || _native.Drawings.IsLocalDrawing()) return;
+        string colors = _session.DrawingColor + string.Join(";", _session.Roster.Values.Select(viewer => viewer.Color));
         if (!force && _shownInk.SequenceEqual(_session.Ink) && _shownPlayerInkVersion == _playerInkVersion
-            && _shownColor == _session.DrawingColor) return;
+            && _shownColor == colors) return;
         _shownInk = _session.Ink.ToArray();
-        _shownColor = _session.DrawingColor;
+        _shownColor = colors;
         _shownPlayerInkVersion = _playerInkVersion;
         var drawings = _native.Drawings;
         drawings.ClearAllLines();
@@ -108,8 +110,20 @@ public partial class SpectatorMap
             }
             return line;
         }
-        player.lines.AddRange(_shownInk.Select(sketch => ConvertLine(sketch.Points, sketch.Eraser)));
+        player.lines.AddRange(_shownInk.Where(sketch => sketch.Author == 0 || sketch.Author == _session.SelfViewerId)
+            .Select(sketch => ConvertLine(sketch.Points, sketch.Eraser)));
         var data = new SerializableMapDrawings { drawings = new() { player } };
+        foreach (var author in _shownInk.Where(line => line.Author != 0 && line.Author != _session.SelfViewerId).GroupBy(line => line.Author))
+        {
+            if (!_displayRun.Players.Any(model => model.NetId == author.Key))
+            {
+                var model = MegaCrit.Sts2.Core.Entities.Players.Player.CreateForNewRun<Defect>(UnlockState.all, author.Key);
+                Set(model, "RunState", _displayRun);
+                ((List<MegaCrit.Sts2.Core.Entities.Players.Player>)_displayRun.Players).Add(model);
+            }
+            data.drawings.Add(new SerializablePlayerMapDrawings { playerId = author.Key,
+                lines = author.Select(line => ConvertLine(line.Points, line.Eraser)).ToList() });
+        }
         if (_playerInkKey == _session.Map?.Key)
             foreach (var author in _playerInk.GroupBy(line => line.PlayerId))
             {

@@ -43,7 +43,7 @@ public partial class SpectatorPanel : CanvasLayer
     {
         UpdateBadge();
         if (!GodotObject.IsInstanceValid(_managementScreen) || !_managementScreen!.Visible) return;
-        string state = $"{_session.IsHost}:{_session.AllowSpectators}:{_session.ViewerId}:{_session.LocalHostStatus}:{string.Join(",", _session.Requests.Select(pair => pair.Key + ":" + pair.Value.Approved))}";
+        string state = $"{_session.IsHost}:{_session.AllowSpectators}:{_session.ViewerRevision}:{_session.LocalHostStatus}:{string.Join(",", _session.Requests.Select(pair => pair.Key + ":" + pair.Value.Approved))}";
         if (_managementState == state) return;
         _managementState = state;
         RefreshManagement();

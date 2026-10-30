@@ -138,8 +138,8 @@ public partial class SpectatorEvents : Node
         var state = new EventState(_key, _session.CurrentMapKey, run.TotalFloor, players,
             run.CurrentRoom is not EventRoom);
         string json = JsonSerializer.Serialize(state, SpectatorSession.WireJson);
-        if (_viewer == _session.ViewerId && json == _last && _time - _sent < 1) return;
-        _viewer = _session.ViewerId; _last = json; _sent = _time;
+        if (_viewer == _session.ViewerRevision && json == _last && _time - _sent < 1) return;
+        _viewer = _session.ViewerRevision; _last = json; _sent = _time;
         var bytes = System.Text.Encoding.UTF8.GetBytes(json);
         if (bytes.Length > 256000) return;
         _session.SendFragments("event-view", _key, _sequence, bytes);

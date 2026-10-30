@@ -20,7 +20,7 @@ public partial class SpectatorSession
     {
         if (!IsHost || !HasViewer || ReplayRunning) return;
         var notice = new ActivityNotice(CleanName(PlayerName(playerId)), action, text, color);
-        if (_activity.Create(_viewerToken, notice) is { } packet) Send(_viewer, packet);
+        if (_activity.Create("", notice) is { } packet) BroadcastViewers(packet);
     }
 
     private bool HandleActivity(ulong sender, SpectatorPacket packet)

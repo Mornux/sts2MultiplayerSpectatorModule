@@ -10,7 +10,7 @@ public partial class SpectatorSession
 
     internal void ApproveViewer(ulong id)
     {
-        if (!IsHost || HasViewer || !_requests.TryGetValue(id, out var request)) return;
+        if (!IsHost || _viewers.Count + _requests.Count(pair => pair.Value.Approved) >= MaxViewers || !_requests.TryGetValue(id, out var request)) return;
         AllowSpectators = true;
         _requests[id] = request with { Approved = true };
     }

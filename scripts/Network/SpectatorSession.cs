@@ -14,9 +14,9 @@ public partial class SpectatorSession : Node
     internal static readonly JsonSerializerOptions WireJson = SpectatorWireProtocol.Json;
     private readonly Dictionary<ulong, string> _friends = new();
     private RunState? _run;
-    private ulong _host, _viewer;
-    private string _token = "", _viewerToken = "", _discovery = "";
-    private double _time, _tick, _heartbeat, _received, _viewerSeen;
+    private ulong _host;
+    private string _token = "", _discovery = "";
+    private double _time, _tick, _heartbeat, _received;
     private long _sequence, _lastSequence;
     private string _mapKey = Guid.NewGuid().ToString("N");
     private int _mapAct = -1;
@@ -24,7 +24,7 @@ public partial class SpectatorSession : Node
     private ulong _remoteViewer;
     private double _lastRoster;
     private SpectatorLocal? _local;
-    private string _viewerName = "", _remoteViewerName = "", _localName = L.T("common.spectator");
+    private string _remoteViewerName = "", _localName = L.T("common.spectator");
 
     private SpectatorLocal Local => _local ??= new SpectatorLocal(ReceivePacket, reason => StopWatching(reason));
     public bool IsLocalHost => IsHost && RunManager.Instance.NetService.Platform == PlatformType.None;
@@ -35,11 +35,11 @@ public partial class SpectatorSession : Node
     public bool IsHost => RunManager.Instance.IsInProgress
         && !RunManager.Instance.IsCleaningUp && RunManager.Instance.NetService.Type == NetGameType.Host;
     public bool Watching => _host != 0;
-    public bool HasViewer => _viewer != 0;
-    public ulong ViewerId => _viewer;
+    public bool HasViewer => _viewers.Count > 0;
+    public ulong ViewerId => _viewers.Keys.FirstOrDefault();
     public ulong HostId => _host == SpectatorLocal.Host ? 1UL : _host;
     public PlatformType WatchPlatform => _host == SpectatorLocal.Host ? PlatformType.None : PlatformType.Steam;
-    public ulong DisplayViewerId => IsHost ? _viewer : _remoteViewer;
+    public ulong DisplayViewerId => IsHost ? ViewerId : _remoteViewer;
     public MapSnapshot? Map { get; private set; }
     public string CurrentMapKey => Map?.Key ?? _mapKey;
     public IReadOnlyList<Sketch> Ink => _ink;
@@ -55,7 +55,7 @@ public partial class SpectatorSession : Node
     // Send battle data immediately through the authenticated spectator session.
     public void SendBattle(string data)
     {
-        if (IsHost && _viewer != 0) Send(_viewer, new(2, "battle", _viewerToken, data));
+        if (IsHost) BroadcastViewers(new(2, "battle", "", data));
     }
 
     public override void _Process(double delta)
@@ -66,6 +66,7 @@ public partial class SpectatorSession : Node
         {
             _inkRun = localRun;
             _remoteViewer = 0;
+            if (!Watching) _remoteViewers.Clear();
             ResetInk();
         }
         Steam.Update();
@@ -85,19 +86,20 @@ public partial class SpectatorSession : Node
             _run = run;
             _danmakuTimes.Clear();
         }
-        if (_viewer != 0)
+        foreach (var pair in _viewers.ToArray())
+            if (!AllowSpectators || !CanContactViewer(pair.Key) || _time - pair.Value.Seen > 12)
+                RemoveViewer(pair.Key, L.Wire("status.closed"));
+        if (HasViewer)
         {
-            if (!AllowSpectators || !CanContactViewer(_viewer) || _time - _viewerSeen > 12)
-                RemoveViewer(L.Wire("status.closed"));
-            else if (Snapshot() is { } snapshot)
-                Send(_viewer, new(2, "map", _viewerToken, snapshot, ++_sequence));
-            else Send(_viewer, new(2, "wait", _viewerToken, L.Wire("status.wait_init")));
+            var snapshot = Snapshot();
+            BroadcastViewers(snapshot != null ? new(2, "map", "", snapshot, ++_sequence)
+                : new(2, "wait", "", L.Wire("status.wait_init")));
         }
         if (!ReplayRunning) SyncNativeInk();
         if (IsHost && _time - _lastRoster >= 2)
         {
             _lastRoster = _time;
-            RelayInk("roster", _viewer.ToString());
+            PublishRoster();
         }
         if (_host == 0) return;
         if (RunManager.Instance.IsInProgress && !ReplayRunning)

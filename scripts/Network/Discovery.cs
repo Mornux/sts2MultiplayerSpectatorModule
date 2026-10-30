@@ -73,7 +73,8 @@ public partial class SpectatorSession
     }
     public string PlayerName(ulong id)
     {
-        if (SpectatorLocal.IsLocal(id)) return id == _viewer ? _viewerName : _remoteViewerName;
+        if (Roster.TryGetValue(id, out var viewer)) return viewer.Name;
+        if (SpectatorLocal.IsLocal(id)) return _remoteViewerName;
         var platform = Watching ? WatchPlatform : RunManager.Instance.IsInProgress
             ? RunManager.Instance.NetService.Platform : SteamInitializer.Initialized ? PlatformType.Steam : PlatformType.None;
         return PlatformUtil.GetPlayerNameRaw(platform, id);
@@ -86,6 +87,7 @@ public partial class SpectatorSession
     {
         if (_host != 0) Send(_host, new(2, "leave", _token));
         _host = 0;
+        _remoteViewers.Clear(); _selfViewerId = 0;
         _local?.Disconnect();
         _token = "";
         Map = null;
@@ -106,20 +108,20 @@ public partial class SpectatorSession
     private static bool IsPeer(ulong id) => IsFriend(id) || (RunManager.Instance.IsInProgress
         && RunManager.Instance.DebugOnlyGetState()?.Players.Any(player => player.NetId == id) == true);
 
-    public void KickViewer()
+    public void KickViewer() => KickViewer(ViewerId);
+    internal void KickViewer(ulong id)
     {
-        if (!IsHost || _viewer == 0) return;
-        RemoveViewer(L.Wire("status.kicked"));
-        ResetInk();
-        RelayInk("clear-ink", "");
+        if (IsHost) RemoveViewer(id, L.Wire("status.kicked"));
     }
     private void RemoveViewer(string reason)
     {
-        ulong viewer = _viewer;
-        _viewer = 0;
-        if (viewer == 0) return;
-        RelayInk("roster", "0");
-        Send(viewer, new(2, "end", _viewerToken, reason));
-        if (SpectatorLocal.IsLocal(viewer)) _local?.ClosePeer(viewer);
+        foreach (ulong id in _viewers.Keys.ToArray()) RemoveViewer(id, reason);
+    }
+    private void RemoveViewer(ulong id, string reason)
+    {
+        if (!_viewers.Remove(id, out var viewer)) return;
+        Send(id, new(2, "end", viewer.Token, reason));
+        if (SpectatorLocal.IsLocal(id)) _local?.ClosePeer(id);
+        ClearAuthor(id); PublishRoster();
     }
 }

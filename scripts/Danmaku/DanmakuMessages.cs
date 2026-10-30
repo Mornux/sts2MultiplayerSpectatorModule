@@ -41,7 +41,7 @@ public partial class SpectatorSession
         if (packet.Kind is not ("chat-send" or "chat")) return false;
         if (packet.Kind == "chat-send")
         {
-            if ((IsHost && sender == _viewer && packet.Token == _viewerToken) || FromReadyPlayer(sender))
+            if (AuthenticatedViewer(sender, packet.Token) || FromReadyPlayer(sender))
                 PublishDanmaku(sender, packet.Text);
         }
         else if (sender == _host && packet.Token == _token && Watching
@@ -62,11 +62,11 @@ public partial class SpectatorSession
     {
         if (!ValidDanmaku(text) || _danmakuTimes.TryGetValue(sender, out double last) && _time - last < 1) return;
         var player = RunManager.Instance.DebugOnlyGetState()?.Players.FirstOrDefault(player => player.NetId == sender);
-        bool observer = _viewer != 0 && sender == _viewer;
+        bool observer = _viewers.TryGetValue(sender, out var viewer);
         if (!observer && player == null) return;
         _danmakuTimes[sender] = _time;
-        string name = observer ? _viewerName : CleanName(PlayerName(sender));
-        string color = observer ? _viewerColor : player!.Character.MapDrawingColor.ToHtml(false);
+        string name = observer ? viewer!.Name : CleanName(PlayerName(sender));
+        string color = observer ? viewer!.Color : player!.Character.MapDrawingColor.ToHtml(false);
         var message = new Danmaku(name, text, color);
         DanmakuReceived?.Invoke(message);
         var packet = new SpectatorPacket(2, "chat", _mapKey, text, ++_chatSequence, Name: name, Color: color);
@@ -76,6 +76,6 @@ public partial class SpectatorSession
                 RunManager.Instance.NetService.SendMessage(new SpectatorLocalRelay { Payload = JsonSerializer.Serialize(packet, WireJson) }, peer.peerId);
                 if (!IsLocalHost) Send(peer.peerId, packet);
             }
-        if (_viewer != 0) Send(_viewer, packet with { Token = _viewerToken });
+        BroadcastViewers(packet);
     }
 }
