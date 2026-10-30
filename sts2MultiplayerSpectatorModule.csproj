@@ -20,6 +20,7 @@
         <Compile Remove="build/**/*.cs" />
         <Compile Remove="local-tests/**/*.cs;local-preview/**/*.cs" Condition="'$(IncludeLocalTools)' != 'true'" />
         <EmbeddedResource Include="$(MSBuildProjectName)\pictures\**\*.png;$(MSBuildProjectName)\localization\**\*.json" />
+        <EmbeddedResource Include="sts2MultiplayerSpectatorModule\mod_image.png" />
         <Reference Include="sts2">
             <HintPath>$(Sts2DataDir)\sts2.dll</HintPath>
             <Private>false</Private>
