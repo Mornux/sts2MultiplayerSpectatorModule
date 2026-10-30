@@ -30,7 +30,7 @@ public partial class SpectatorSession : Node
     private SpectatorLocal Local => _local ??= new SpectatorLocal(ReceivePacket, reason => StopWatching(reason));
     public bool IsLocalHost => IsHost && RunManager.Instance.NetService.Platform == PlatformType.None;
     public string LocalHostStatus => _local?.Error is { Length: > 0 } error ? error
-        : L.T("local.port", SpectatorLocal.GamePort + 1);
+        : L.T("local.port", SpectatorLocal.SpectatorPort);
 
     public bool AllowSpectators { get; set; }
     public bool IsHost => RunManager.Instance.IsInProgress

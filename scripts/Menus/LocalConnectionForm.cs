@@ -49,7 +49,7 @@ public partial class SpectatorPanel
         Caption(L.T("local.address_label"));
         _localAddress = Input("127.0.0.1", 64);
         Caption(L.T("local.port_label"));
-        _localPort = Input("33771", 5);
+        _localPort = Input(SpectatorLocal.SpectatorPort.ToString(System.Globalization.CultureInfo.InvariantCulture), 5);
         Caption(L.T("local.name_label"));
         _localName = Input(L.T("common.spectator"), 40);
         _localError = Caption("");

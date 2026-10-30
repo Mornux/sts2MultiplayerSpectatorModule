@@ -14,6 +14,8 @@ namespace sts2MultiplayerSpectatorModule.Scripts;
 
 public partial class SpectatorSession
 {
+    internal string LocalSpectatorName => WatchPlatform == PlatformType.Steam && SteamInitializer.Initialized
+        ? SteamFriends.GetPersonaName() : _localName;
 
     // 查询游戏内好友，由房主响应是否可以观战。
     // Query friends playing this game and ask each host for availability.
@@ -47,9 +49,9 @@ public partial class SpectatorSession
 
     // 本地观战复用相同协议和界面，只替换传输和名字来源。
     // Local spectating shares the protocol and UI while replacing transport and name lookup.
-    public bool WatchLocal(string ip, int gamePort, string name)
+    public bool WatchLocal(string ip, int spectatorPort, string name)
     {
-        if (RunManager.Instance.IsInProgress || !SpectatorLocal.ValidAddress(ip, gamePort)) return false;
+        if (RunManager.Instance.IsInProgress || !SpectatorLocal.ValidAddress(ip, spectatorPort)) return false;
         StopWatching();
         _host = SpectatorLocal.Host;
         _localName = CleanName(name);
@@ -57,7 +59,7 @@ public partial class SpectatorSession
         _lastSequence = 0;
         _received = _heartbeat = _time;
         SetStatus(L.T("status.connecting_local"));
-        MegaCrit.Sts2.Core.Helpers.TaskHelper.RunSafely(Local.Connect(ip, gamePort, () =>
+        MegaCrit.Sts2.Core.Helpers.TaskHelper.RunSafely(Local.Connect(ip, spectatorPort, () =>
         {
             if (_host == SpectatorLocal.Host) Send(_host, new(2, "watch", _token, Name: _localName, Color: DrawingColor));
         }));

@@ -90,7 +90,7 @@ public partial class SpectatorMap : Control
         var background = new ColorRect { Color = new Color("10191e"), MouseFilter = MouseFilterEnum.Ignore };
         AddChild(background);
         background.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        _status = new Label { MouseFilter = MouseFilterEnum.Ignore, Position = new Vector2(110, 110) };
+        _status = new Label { MouseFilter = MouseFilterEnum.Ignore, Position = new Vector2(24, 110) };
         AddChild(_status);
         _hoverTips = new Control { Name = "SpectatorHoverTips", MouseFilter = MouseFilterEnum.Ignore };
         AddChild(_hoverTips);

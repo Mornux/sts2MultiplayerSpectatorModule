@@ -16,6 +16,7 @@ internal sealed class SpectatorLocal : INetHostHandler, INetClientHandler, IDisp
     internal const ulong Host = ulong.MaxValue;
     private const ulong Prefix = 0xffff000000000000;
     internal static ushort GamePort = 33771;
+    internal static int SpectatorPort => GamePort + 1;
     private readonly ulong _identity = Prefix | (BitConverter.ToUInt64(System.Security.Cryptography.RandomNumberGenerator.GetBytes(8)) & 0x0000ffffffffffff);
     private readonly Action<ulong, byte[]> _receive;
     private readonly Action<string> _failed;
@@ -43,10 +44,10 @@ internal sealed class SpectatorLocal : INetHostHandler, INetClientHandler, IDisp
                 else
                 {
                     var server = new ENetHost(this);
-                    var error = server.StartHost((ushort)(GamePort + 1), 4);
+                    var error = server.StartHost((ushort)SpectatorPort, 4);
                     if (error.HasValue)
                     {
-                        Error = L.T("local.listen_failed", GamePort + 1);
+                        Error = L.T("local.listen_failed", SpectatorPort);
                         ((ENetConnection?)AccessTools.Field(typeof(ENetHost), "_connection").GetValue(server))?.Dispose();
                     }
                     else _server = server;
@@ -101,7 +102,7 @@ internal sealed class SpectatorLocal : INetHostHandler, INetClientHandler, IDisp
 
     // 地址必须明确指定；本机测试使用 127.0.0.1。
     // Require an explicit address; use 127.0.0.1 for same-machine testing.
-    internal static bool ValidAddress(string ip, int port) => port is > 0 and < 65535
+    internal static bool ValidAddress(string ip, int port) => port is > 0 and <= 65535
         && IPAddress.TryParse(ip, out var address)
         && address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork
         && !IPAddress.Any.Equals(address) && !IPAddress.Broadcast.Equals(address)
@@ -109,13 +110,16 @@ internal sealed class SpectatorLocal : INetHostHandler, INetClientHandler, IDisp
 
     internal async Task Connect(string ip, int port, Action connected)
     {
+        // 输入的端口就是观战端口，连接时不再进行偏移。
+        // Connect directly to the entered spectator port without an offset.
+        if (!ValidAddress(ip, port)) { _failed(L.T("local.invalid_address")); return; }
         Disconnect();
         int generation = _generation;
         var client = _client = new ENetClient(this);
         _cancel = new CancellationTokenSource();
         try
         {
-            var error = await client.ConnectToHost(_identity, ip, (ushort)(port + 1), _cancel.Token);
+            var error = await client.ConnectToHost(_identity, ip, (ushort)port, _cancel.Token);
             if (generation != _generation) return;
             if (error.HasValue || !client.IsConnected)
                 _failed(L.T("local.connect_failed"));

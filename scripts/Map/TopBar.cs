@@ -54,6 +54,14 @@ public partial class SpectatorMap
         _topBar.GetNode<NTopBarFloorIcon>("%FloorIcon").Initialize(_displayRun!);
         _topBar.GetNode<NTopBarBossIcon>("%BossIcon").Initialize(_displayRun!);
         _timerLabel = _topBar.GetNode<MegaLabel>("RightAlignedStuff/TimerContainer/TimerLabel");
+        // 地图提示与战斗提示共用原版计时器字体、颜色和描边。
+        // Match the combat hint's native timer font, color and outline on the map status.
+        _status.AddThemeFontOverride("font", _timerLabel.GetThemeFont("font"));
+        _status.AddThemeFontSizeOverride("font_size", 24);
+        foreach (string color in new[] { "font_color", "font_outline_color", "font_shadow_color" })
+            _status.AddThemeColorOverride(color, _timerLabel.GetThemeColor(color));
+        foreach (string constant in new[] { "outline_size", "shadow_offset_x", "shadow_offset_y" })
+            _status.AddThemeConstantOverride(constant, _timerLabel.GetThemeConstant(constant));
     }
 
     // 给原版信息控件提供只读房间状态，悬浮文字与图标继续使用原版逻辑。

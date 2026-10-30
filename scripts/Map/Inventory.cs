@@ -19,6 +19,7 @@ public partial class SpectatorMap
     private string _inventoryKey = "";
     private long _inventorySequence = -1;
     private Control? _inspection;
+    private ColorRect? _inspectionBackstop;
 
     private void ReceiveInventory(string json)
     {
@@ -57,6 +58,11 @@ public partial class SpectatorMap
             CloseInventory();
             var player = Player.FromSerializable(save);
             Set(player, "RunState", _displayRun);
+            // 原版详情依赖共享遮罩，独立地图补上相同透明度的黑色背景。
+            // Native details rely on a shared backstop; supply the same black opacity on the standalone map.
+            _inspectionBackstop = new ColorRect { Name = "InventoryBackstop", Color = new Color(0, 0, 0, 0.85098f) };
+            _hoverTips.AddChild(_inspectionBackstop);
+            _inspectionBackstop.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
             _inspection = NMultiplayerPlayerExpandedState.Create(player);
             _hoverTips.AddChild(_inspection);
             _inspection.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
@@ -70,7 +76,8 @@ public partial class SpectatorMap
 
     internal void CloseInventory()
     {
-        if (_inspection != null) { _inspection.QueueFree(); _inspection = null; }
+        if (_inspection != null) { _inspection.Hide(); _inspection.QueueFree(); _inspection = null; }
+        if (_inspectionBackstop != null) { _inspectionBackstop.Hide(); _inspectionBackstop.QueueFree(); _inspectionBackstop = null; }
         ActiveScreenContext.Instance.Update();
     }
 }

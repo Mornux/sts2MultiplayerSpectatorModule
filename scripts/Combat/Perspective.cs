@@ -103,10 +103,12 @@ public partial class SpectatorCombat
             label.Name = "SpectatorViewLabel";
             label.MouseFilter = Control.MouseFilterEnum.Ignore;
             global.TopBar.AddChild(label);
-            label.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.CenterTop);
-            label.Position += new Vector2(-300, 84);
-            label.Size = new Vector2(600, 40);
-            label.HorizontalAlignment = HorizontalAlignment.Center;
+            // 提示保留少量左侧边距，与地图提示保持左对齐。
+            // Keep a small left margin, matching the map status.
+            label.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.TopLeft);
+            label.Position = new Vector2(24, 84);
+            label.Size = new Vector2(1200, 40);
+            label.HorizontalAlignment = HorizontalAlignment.Left;
             label.AddThemeFontSizeOverride("font_size", 24);
         }
         label.SetTextAutoSize(L.T("combat.perspective", name));

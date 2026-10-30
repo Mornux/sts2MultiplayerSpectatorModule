@@ -48,15 +48,21 @@ public partial class SpectatorPanel
     private void UpdateBadge()
     {
         var players = NRun.Instance?.GlobalUi?.MultiplayerPlayerContainer;
-        if (players == null || _session.DisplayViewerId == 0)
+        // 观战端显示自身，参战端显示房主同步的观众；地图和战斗共用同一头像。
+        // Show self on the spectator client and the relayed viewer on players, in both map and combat.
+        var mapPlayers = _session.Watching && _map.Visible ? _map.GetNodeOrNull<VBoxContainer>("SpectatorPlayers") : null;
+        Node? badgeParent = mapPlayers ?? players?.GetParent();
+        ulong id = _session.Watching ? SpectatorMap.DisplayPlayerId : _session.DisplayViewerId;
+        if (badgeParent == null || id == 0)
         {
             if (GodotObject.IsInstanceValid(_badge)) _badge!.Hide();
             return;
         }
-        if (!GodotObject.IsInstanceValid(_badge) || _badge!.GetParent() != players.GetParent())
+        if (!GodotObject.IsInstanceValid(_badge) || _badge!.GetParent() != badgeParent)
         {
             if (GodotObject.IsInstanceValid(_badge)) _badge!.QueueFree();
-            _badge = new Control { Name = "SpectatorBadge", MouseFilter = Control.MouseFilterEnum.Ignore, Size = new Vector2(280, 64) };
+            _badge = new Control { Name = "SpectatorBadge", MouseFilter = Control.MouseFilterEnum.Ignore,
+                Size = new Vector2(280, 64), CustomMinimumSize = new Vector2(280, 64) };
             var template = ResourceLoader.Load<PackedScene>("res://scenes/ui/multiplayer_player_state.tscn").Instantiate<Control>();
             var icon = (TextureRect)template.GetNode<TextureRect>("%CharacterIcon").Duplicate();
             foreach (var child in icon.GetChildren()) { icon.RemoveChild(child); child.Free(); }
@@ -75,20 +81,21 @@ public partial class SpectatorPanel
             caption.Text = L.T("common.watching");
             _badge.AddChild(caption);
             template.Free();
-            players.GetParent().AddChild(_badge);
+            badgeParent.AddChild(_badge);
         }
-        ulong id = _session.DisplayViewerId;
         if (_badgeId != id)
         {
             _badgeId = id;
-            if (SteamInitializer.Initialized && !SpectatorLocal.IsLocal(id))
+            if (!_session.Watching && SteamInitializer.Initialized && !SpectatorLocal.IsLocal(id))
                 SteamFriends.RequestUserInformation(new CSteamID(id), true);
         }
-        _badgeName!.SetTextAutoSize(_session.PlayerName(id));
+        _badgeName!.SetTextAutoSize(_session.Watching ? _session.LocalSpectatorName : _session.PlayerName(id));
+        if (mapPlayers != null) { _badge!.Show(); return; }
+        if (players == null) { _badge!.Hide(); return; }
         float bottom = players.GetChildren().OfType<NMultiplayerPlayerState>()
             .Select(player => player.Position.Y + Math.Max(player.Size.Y, 64)).DefaultIfEmpty(0).Max();
         _badge!.Position = players.Position + new Vector2(0, bottom + 8);
         _badge.Modulate = players.Modulate;
-        _badge.Visible = players.IsVisibleInTree() && NMapScreen.Instance?.IsOpen == true;
+        _badge.Visible = players.IsVisibleInTree() && (NMapScreen.Instance?.IsOpen == true || NRun.Instance?.CombatRoom != null);
     }
 }
