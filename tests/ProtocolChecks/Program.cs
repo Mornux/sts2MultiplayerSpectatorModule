@@ -103,7 +103,7 @@ foreach(var key in english.Keys)
 }
 var catalog = new LocalizationCatalog(localizationRoot);
 Check(catalog.Text("zhs","menu.spectate")=="观战" && catalog.Text("eng","menu.spectate")=="Spectate", "Select the requested language.");
-Check(catalog.Text("fra","menu.spectate")=="Spectate", "Missing language must fall back to English.");
+Check(catalog.Text("zzz","menu.spectate")=="Spectate", "Missing language must fall back to English.");
 Check(catalog.Text("../zhs","menu.spectate")=="Spectate", "Language paths cannot escape localization directories.");
 Check(catalog.Text("eng","unknown.key")=="[unknown.key]", "Unknown keys have a readable fallback.");
 string localizedWire=L.Wire("local.port",33772);
@@ -135,6 +135,28 @@ var embeddedCatalog = new LocalizationCatalog("no-loose-assets", embedded: true)
 Check(embeddedCatalog.Text("zhs", "menu.spectate") == "观战" && embeddedCatalog.Text("eng", "menu.spectate") == "Spectate",
     "Embedded translations work without external resource directories.");
 Check(embeddedCatalog.Text("missing", "menu.spectate") == "Spectate", "Embedded translations retain English fallback.");
+// Every language shown in the game's selector has a complete embedded translation table.
+string[] supportedLanguages = ["zhs","eng","fra","ita","deu","spa","jpn","kor","pol","ptb","rus","esp","tha","tur"];
+foreach (string language in supportedLanguages)
+{
+    var path = Path.Combine(localizationRoot,language,"spectator.json");
+    Check(File.Exists(path), "Game language has a translation file: "+language);
+    var table = JsonSerializer.Deserialize<Dictionary<string,string>>(File.ReadAllText(path))!;
+    Check(table.Keys.Order().SequenceEqual(english.Keys.Order()), "Language has all keys: "+language);
+    foreach (var key in english.Keys)
+    {
+        Check(!string.IsNullOrWhiteSpace(table[key]), "Translation is nonempty: "+language+"/"+key);
+        string Tokens(string value,string pattern) => string.Join("|",System.Text.RegularExpressions.Regex.Matches(value,pattern).Select(m=>m.Value).Order());
+        Check(Tokens(table[key],@"\{[0-9]+\}")==Tokens(english[key],@"\{[0-9]+\}"), "Translation retains format placeholders: "+language+"/"+key);
+        Check(Tokens(table[key],@"\[[^\]]+\]")==Tokens(english[key],@"\[[^\]]+\]"), "Translation retains BBCode: "+language+"/"+key);
+        Check(embeddedCatalog.Text(language,key,"A","B","C")==string.Format(table[key],"A","B","C"),
+            "Embedded translation matches the source table: "+language+"/"+key);
+    }
+    L.Language=()=>language;
+    Check(L.Resolve(L.Wire("local.port",33772))==string.Format(table["local.port"],33772), "Network notices use receiver language: "+language);
+}
+L.Language=()=>"eng";
+
 // Inspect metadata without loading Godot or the game into the test process.
 if (args.Length > 0)
 {
