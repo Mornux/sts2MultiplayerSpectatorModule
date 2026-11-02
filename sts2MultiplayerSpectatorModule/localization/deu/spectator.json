@@ -1,7 +1,7 @@
 {
-  "chat.send_failed": "Senden nicht möglich. Prüfe die Länge oder versuche es erneut · Esc zum Abbrechen",
-  "chat.help": "Eingabe zum Senden · Esc zum Abbrechen",
-  "chat.placeholder": "Nachricht eingeben (höchstens 100 Zeichen)",
+  "comment.send_failed": "Senden nicht möglich. Prüfe die Länge oder versuche es erneut · Esc zum Abbrechen",
+  "comment.help": "Eingabe zum Senden · Esc zum Abbrechen",
+  "comment.placeholder": "Kommentar eingeben (höchstens 100 Zeichen)",
   "combat.own_run": "Während deines eigenen Durchlaufs ist keine Zuschauerwiedergabe möglich.",
   "combat.no_menu": "Es ist kein Menü zum Wiederherstellen verfügbar.",
   "combat.loading": "Kampf wird geladen. Über das Zahnradmenü kannst du das Zuschauen beenden…",
@@ -37,7 +37,6 @@
   "events.architect_score": "Punktzahl des Architekten: ",
   "events.architect_hint": "\nOptionen, Entscheidungen und Punktzahl sind sichtbar. Dialoginszenierungen und Demonstrationskämpfe im Hintergrund werden nicht wiedergegeben.",
   "map.load_failed": "Karte konnte nicht geladen werden. Prüfe, ob Spiel- und Mod-Versionen übereinstimmen.",
-  "events.help": "Ereignis · Nur Ansicht · Name anklicken zum Spielerwechsel · M für Karte",
   "events.finished": " · Abgeschlossen",
   "events.history": "[b]Spielerentscheidungen[/b]\n\n",
   "events.no_choice": "Noch keine Auswahl",
@@ -86,7 +85,7 @@
   "status.timeout": "Der Host antwortet nicht. Prüfe, ob alle die Mod haben und der Host Zuschauer erlaubt.",
   "status.host_left": "Der Host hat das Spiel verlassen.",
   "combat.perspective_tooltip": "Zuschauen: {0} (Mausrad zum Spielerwechsel)",
-  "combat.perspective": "Zuschauen: {0} · Mausrad zum Spielerwechsel",
+  "combat.perspective": "Zuschauen: {0}",
   "local.listen_failed": "Zuschauerport {0} kann nicht geöffnet werden. Prüfe, ob er bereits belegt ist.",
   "local.port": "Lokaler Zuschauerport: {0}",
   "status.watching": "Zuschauen · Aktuell: {0}",
@@ -94,9 +93,9 @@
   "events.voters": "\n[blue]Stimmen: {0}[/blue]",
   "activity.choice": "{0} hat {1} gewählt",
   "activity.obtain": "{0} hat {1} erhalten",
-  "settings.chat_display": "Nachrichtenanzeige",
-  "settings.chat_scroll": "Über den Bildschirm scrollen",
-  "settings.chat_log": "Nachrichten unten links",
+  "settings.comment_display": "Kommentaranzeige",
+  "settings.comment_scroll": "Über den Bildschirm scrollen",
+  "settings.comment_log": "Nachrichten unten links",
   "activity.gold": "{0} hat {1} Gold erhalten",
   "activity.upgrade": "{0} hat {1} verbessert",
   "activity.enchant": "{0} hat {1} verzaubert",
@@ -112,5 +111,6 @@
   "room.Shop": "Händler",
   "room.Event": "Ereignis",
   "room.RestSite": "Rastplatz",
-  "room.Map": "Karte"
+  "room.Map": "Karte",
+  "rest.help": "Rastplatz · Nur ansehen · M: Karte"
 }

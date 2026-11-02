@@ -1,7 +1,7 @@
 {
-  "chat.send_failed": "Envoi impossible. Vérifiez la longueur ou réessayez · Échap pour annuler",
-  "chat.help": "Entrée pour envoyer · Échap pour annuler",
-  "chat.placeholder": "Saisissez un message (100 caractères maximum)",
+  "comment.send_failed": "Envoi impossible. Vérifiez la longueur ou réessayez · Échap pour annuler",
+  "comment.help": "Entrée pour envoyer · Échap pour annuler",
+  "comment.placeholder": "Saisissez un commentaire (100 caractères maximum)",
   "combat.own_run": "Impossible de lancer le visionnage pendant votre propre partie.",
   "combat.no_menu": "Aucun menu ne peut être restauré.",
   "combat.loading": "Chargement du combat. Utilisez le menu de l'engrenage pour quitter le mode spectateur…",
@@ -37,7 +37,6 @@
   "events.architect_score": "Score de l'architecte : ",
   "events.architect_hint": "\nConsultez les choix, leur historique et le score. Les dialogues joués et les combats de démonstration ne sont pas rejoués.",
   "map.load_failed": "Impossible de charger la carte. Vérifiez que les versions du jeu et des mods correspondent.",
-  "events.help": "Événement · Lecture seule · Cliquez sur un nom pour changer de joueur · M : carte",
   "events.finished": " · Terminé",
   "events.history": "[b]Choix des joueurs[/b]\n\n",
   "events.no_choice": "Aucun choix pour le moment",
@@ -86,7 +85,7 @@
   "status.timeout": "L'hôte ne répond pas. Vérifiez que tous ont le mod et que l'hôte autorise les spectateurs.",
   "status.host_left": "L'hôte a quitté la partie.",
   "combat.perspective_tooltip": "Joueur observé : {0} (molette pour changer)",
-  "combat.perspective": "Observation : {0} · Molette pour changer de joueur",
+  "combat.perspective": "Observation : {0}",
   "local.listen_failed": "Impossible d'écouter sur le port spectateur {0}. Vérifiez s'il est occupé.",
   "local.port": "Port spectateur local : {0}",
   "status.watching": "Observation · Actuel : {0}",
@@ -94,9 +93,9 @@
   "events.voters": "\n[blue]Votes : {0}[/blue]",
   "activity.choice": "{0} a choisi {1}",
   "activity.obtain": "{0} a obtenu {1}",
-  "settings.chat_display": "Affichage des messages",
-  "settings.chat_scroll": "Défilement à l’écran",
-  "settings.chat_log": "Journal en bas à gauche",
+  "settings.comment_display": "Affichage des commentaires",
+  "settings.comment_scroll": "Défilement à l’écran",
+  "settings.comment_log": "Journal en bas à gauche",
   "activity.gold": "{0} a gagné {1} pièces d’or",
   "activity.upgrade": "{0} a amélioré {1}",
   "activity.enchant": "{0} a enchanté {1}",
@@ -112,5 +111,6 @@
   "room.Shop": "Boutique",
   "room.Event": "Événement",
   "room.RestSite": "Repos",
-  "room.Map": "Carte"
+  "room.Map": "Carte",
+  "rest.help": "Feu de camp · Lecture seule · M : carte"
 }

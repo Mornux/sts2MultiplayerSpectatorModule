@@ -1,7 +1,7 @@
 {
-  "chat.send_failed": "Invio impossibile. Controlla la lunghezza o riprova · Esc per annullare",
-  "chat.help": "Invio per inviare · Esc per annullare",
-  "chat.placeholder": "Scrivi un messaggio (massimo 100 caratteri)",
+  "comment.send_failed": "Invio impossibile. Controlla la lunghezza o riprova · Esc per annullare",
+  "comment.help": "Invio per inviare · Esc per annullare",
+  "comment.placeholder": "Scrivi un commento (massimo 100 caratteri)",
   "combat.own_run": "Non puoi avviare la visualizzazione durante la tua partita.",
   "combat.no_menu": "Nessun menu disponibile da ripristinare.",
   "combat.loading": "Caricamento del combattimento. Usa il menu dell'ingranaggio per uscire dalla modalità spettatore…",
@@ -37,7 +37,6 @@
   "events.architect_score": "Punteggio dell'architetto: ",
   "events.architect_hint": "\nVisualizza opzioni, scelte e punteggio. Le scene di dialogo e i combattimenti dimostrativi sullo sfondo non vengono riprodotti.",
   "map.load_failed": "Impossibile caricare la mappa. Controlla che le versioni del gioco e delle mod coincidano.",
-  "events.help": "Evento · Sola lettura · Clicca un nome per cambiare giocatore · M per la mappa",
   "events.finished": " · Completato",
   "events.history": "[b]Scelte dei giocatori[/b]\n\n",
   "events.no_choice": "Nessuna scelta ancora",
@@ -86,7 +85,7 @@
   "status.timeout": "L'host non risponde. Controlla che tutti abbiano la mod e che l'host consenta gli spettatori.",
   "status.host_left": "L'host ha lasciato la partita.",
   "combat.perspective_tooltip": "Stai osservando: {0} (rotellina per cambiare giocatore)",
-  "combat.perspective": "Osservazione: {0} · Rotellina per cambiare giocatore",
+  "combat.perspective": "Osservazione: {0}",
   "local.listen_failed": "Impossibile ascoltare sulla porta spettatore {0}. Controlla se è occupata.",
   "local.port": "Porta spettatore locale: {0}",
   "status.watching": "Spettatore · Attuale: {0}",
@@ -94,9 +93,9 @@
   "events.voters": "\n[blue]Voti: {0}[/blue]",
   "activity.choice": "{0} ha scelto {1}",
   "activity.obtain": "{0} ha ottenuto {1}",
-  "settings.chat_display": "Visualizzazione messaggi",
-  "settings.chat_scroll": "Scorrimento sullo schermo",
-  "settings.chat_log": "Registro in basso a sinistra",
+  "settings.comment_display": "Visualizzazione commenti",
+  "settings.comment_scroll": "Scorrimento sullo schermo",
+  "settings.comment_log": "Registro in basso a sinistra",
   "activity.gold": "{0} ha ottenuto {1} oro",
   "activity.upgrade": "{0} ha potenziato {1}",
   "activity.enchant": "{0} ha incantato {1}",
@@ -112,5 +111,6 @@
   "room.Shop": "Negozio",
   "room.Event": "Evento",
   "room.RestSite": "Riposo",
-  "room.Map": "Mappa"
+  "room.Map": "Mappa",
+  "rest.help": "Falò · Sola lettura · M: mappa"
 }

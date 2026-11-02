@@ -1,7 +1,7 @@
 {
-  "chat.send_failed": "Nie można wysłać. Sprawdź długość lub spróbuj ponownie · Esc, aby anulować",
-  "chat.help": "Enter, aby wysłać · Esc, aby anulować",
-  "chat.placeholder": "Wpisz wiadomość (do 100 znaków)",
+  "comment.send_failed": "Nie można wysłać. Sprawdź długość lub spróbuj ponownie · Esc, aby anulować",
+  "comment.help": "Enter, aby wysłać · Esc, aby anulować",
+  "comment.placeholder": "Wpisz komentarz (do 100 znaków)",
   "combat.own_run": "Nie można rozpocząć odtwarzania dla widza podczas własnej rozgrywki.",
   "combat.no_menu": "Brak ekranu menu do przywrócenia.",
   "combat.loading": "Wczytywanie walki. Tryb widza można opuścić w menu koła zębatego…",
@@ -37,7 +37,6 @@
   "events.architect_score": "Wynik architekta: ",
   "events.architect_hint": "\nZobacz opcje, historię wyborów i wynik. Scenki dialogowe i walki pokazowe w tle nie są odtwarzane.",
   "map.load_failed": "Nie udało się wczytać mapy. Sprawdź zgodność wersji gry i modów.",
-  "events.help": "Podgląd wydarzenia · Tylko odczyt · Kliknij imię, aby zmienić gracza · M: mapa",
   "events.finished": " · Ukończono",
   "events.history": "[b]Wybory graczy[/b]\n\n",
   "events.no_choice": "Jeszcze nie wybrano",
@@ -86,7 +85,7 @@
   "status.timeout": "Gospodarz nie odpowiada. Sprawdź, czy wszyscy mają mod i czy gospodarz zezwala na widzów.",
   "status.host_left": "Gospodarz opuścił grę.",
   "combat.perspective_tooltip": "Oglądasz: {0} (kółko myszy zmienia gracza)",
-  "combat.perspective": "Oglądasz: {0} · Kółko myszy zmienia gracza",
+  "combat.perspective": "Oglądasz: {0}",
   "local.listen_failed": "Nie można nasłuchiwać na porcie widza {0}. Sprawdź, czy jest zajęty.",
   "local.port": "Lokalny port widza: {0}",
   "status.watching": "Obserwacja · Teraz: {0}",
@@ -94,9 +93,9 @@
   "events.voters": "\n[blue]Głosy: {0}[/blue]",
   "activity.choice": "{0}: wybrano {1}",
   "activity.obtain": "{0}: otrzymano {1}",
-  "settings.chat_display": "Wyświetlanie wiadomości",
-  "settings.chat_scroll": "Przewijanie na ekranie",
-  "settings.chat_log": "Dziennik w lewym dolnym rogu",
+  "settings.comment_display": "Wyświetlanie komentarzy",
+  "settings.comment_scroll": "Przewijanie na ekranie",
+  "settings.comment_log": "Dziennik w lewym dolnym rogu",
   "activity.gold": "{0} zdobywa {1} złota",
   "activity.upgrade": "{0} ulepsza {1}",
   "activity.enchant": "{0} zaklina {1}",
@@ -112,5 +111,6 @@
   "room.Shop": "Sklep",
   "room.Event": "Wydarzenie",
   "room.RestSite": "Odpoczynek",
-  "room.Map": "Mapa"
+  "room.Map": "Mapa",
+  "rest.help": "Miejsce odpoczynku · Tylko podgląd · M: mapa"
 }

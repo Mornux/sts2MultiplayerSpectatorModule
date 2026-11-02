@@ -1,7 +1,7 @@
 {
-  "chat.send_failed": "送信できません。文字数を確認するか、もう一度お試しください · Escでキャンセル",
-  "chat.help": "Enterで送信 · Escでキャンセル",
-  "chat.placeholder": "メッセージを入力（最大100文字）",
+  "comment.send_failed": "送信できません。文字数を確認するか、もう一度お試しください · Escでキャンセル",
+  "comment.help": "Enterで送信 · Escでキャンセル",
+  "comment.placeholder": "コメントを入力（最大100文字）",
   "combat.own_run": "自分のランの進行中は観戦リプレイを開始できません。",
   "combat.no_menu": "復帰できるメニュー画面がありません。",
   "combat.loading": "戦闘を読み込み中。歯車メニューから観戦を終了できます…",
@@ -37,7 +37,6 @@
   "events.architect_score": "建築家のスコア：",
   "events.architect_hint": "\n選択肢、選択履歴、スコアを確認できます。会話の演出や背景の模擬戦闘は再生しません。",
   "map.load_failed": "マップを読み込めません。ゲームとMODのバージョンが一致しているか確認してください。",
-  "events.help": "イベント観戦 · 閲覧のみ · 名前をクリックでプレイヤー切替 · Mでマップ",
   "events.finished": " · 完了",
   "events.history": "[b]プレイヤーの選択履歴[/b]\n\n",
   "events.no_choice": "まだ選択していません",
@@ -86,7 +85,7 @@
   "status.timeout": "ホストから応答がありません。全員がMODを導入し、ホストが観戦を許可しているか確認してください。",
   "status.host_left": "ホストがゲームを終了しました。",
   "combat.perspective_tooltip": "観戦中：{0}（ホイールでプレイヤー切替）",
-  "combat.perspective": "観戦：{0} · ホイールでプレイヤー切替",
+  "combat.perspective": "観戦：{0}",
   "local.listen_failed": "観戦ポート{0}で待ち受けできません。ポートが使用中か確認してください。",
   "local.port": "ローカル観戦ポート：{0}",
   "status.watching": "観戦中 · 現在: {0}",
@@ -94,9 +93,9 @@
   "events.voters": "\n[blue]投票：{0}[/blue]",
   "activity.choice": "{0}が{1}を選択しました",
   "activity.obtain": "{0}が{1}を獲得しました",
-  "settings.chat_display": "メッセージの表示方法",
-  "settings.chat_scroll": "画面を流れる表示",
-  "settings.chat_log": "左下のメッセージ欄",
+  "settings.comment_display": "コメントの表示方法",
+  "settings.comment_scroll": "画面を流れる表示",
+  "settings.comment_log": "左下のメッセージ欄",
   "activity.gold": "{0}が{1}ゴールドを獲得しました",
   "activity.upgrade": "{0}が{1}をアップグレードしました",
   "activity.enchant": "{0}が{1}をエンチャントしました",
@@ -112,5 +111,6 @@
   "room.Shop": "ショップ",
   "room.Event": "イベント",
   "room.RestSite": "休憩所",
-  "room.Map": "マップ"
+  "room.Map": "マップ",
+  "rest.help": "休憩所観戦 · 閲覧専用 · M：マップ"
 }

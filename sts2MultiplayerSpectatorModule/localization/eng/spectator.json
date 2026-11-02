@@ -1,7 +1,7 @@
 {
-  "chat.send_failed": "Cannot send. Check the length or try again · Esc to cancel",
-  "chat.help": "Enter to send · Esc to cancel",
-  "chat.placeholder": "Enter a message (up to 100 characters)",
+  "comment.send_failed": "Cannot send. Check the length or try again · Esc to cancel",
+  "comment.help": "Enter to send · Esc to cancel",
+  "comment.placeholder": "Enter a comment (up to 100 characters)",
   "combat.own_run": "Cannot start spectator playback during your own run.",
   "combat.no_menu": "No menu scene is available to restore.",
   "combat.loading": "Loading combat. Use the gear menu to leave spectating…",
@@ -37,7 +37,6 @@
   "events.architect_score": "Architect score: ",
   "events.architect_hint": "\nView options, choices and scores. Dialogue performances and background demonstration combat are not replayed.",
   "map.load_failed": "Could not load the map. Check that game and mod versions match.",
-  "events.help": "Event spectator · Read-only · Click a name to switch players · M for map",
   "events.finished": " · Finished",
   "events.history": "[b]Player choices[/b]\n\n",
   "events.no_choice": "No choice yet",
@@ -86,7 +85,7 @@
   "status.timeout": "The host is not responding. Check that both sides have the mod and the host allows spectators.",
   "status.host_left": "The host left the game.",
   "combat.perspective_tooltip": "Watching: {0} (scroll to switch players)",
-  "combat.perspective": "Watching: {0} · Scroll to switch players",
+  "combat.perspective": "Watching: {0}",
   "local.listen_failed": "Could not listen on spectator port {0}. Check whether it is in use.",
   "local.port": "Local spectator port: {0}",
   "status.watching": "Spectating · Current: {0}",
@@ -94,9 +93,9 @@
   "events.voters": "\n[blue]Votes: {0}[/blue]",
   "activity.choice": "{0} chose {1}",
   "activity.obtain": "{0} obtained {1}",
-  "settings.chat_display": "Chat display",
-  "settings.chat_scroll": "Scrolling on screen",
-  "settings.chat_log": "Bottom-left message log",
+  "settings.comment_display": "Comment display",
+  "settings.comment_scroll": "Scrolling on screen",
+  "settings.comment_log": "Bottom-left message log",
   "activity.gold": "{0} gained {1} gold",
   "activity.upgrade": "{0} upgraded {1}",
   "activity.enchant": "{0} enchanted {1}",
@@ -112,5 +111,6 @@
   "room.Shop": "Shop",
   "room.Event": "Event",
   "room.RestSite": "Rest site",
-  "room.Map": "Map"
+  "room.Map": "Map",
+  "rest.help": "Rest site · Read-only · M: map"
 }

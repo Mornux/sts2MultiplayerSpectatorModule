@@ -1,7 +1,7 @@
 {
-  "chat.send_failed": "Não foi possível enviar. Confira o tamanho ou tente novamente · Esc para cancelar",
-  "chat.help": "Enter para enviar · Esc para cancelar",
-  "chat.placeholder": "Digite uma mensagem (até 100 caracteres)",
+  "comment.send_failed": "Não foi possível enviar. Confira o tamanho ou tente novamente · Esc para cancelar",
+  "comment.help": "Enter para enviar · Esc para cancelar",
+  "comment.placeholder": "Digite um comentário (até 100 caracteres)",
   "combat.own_run": "Não é possível iniciar a reprodução de espectador durante sua própria partida.",
   "combat.no_menu": "Não há um menu disponível para restaurar.",
   "combat.loading": "Carregando o combate. Use o menu da engrenagem para sair do modo espectador…",
@@ -37,7 +37,6 @@
   "events.architect_score": "Pontuação do arquiteto: ",
   "events.architect_hint": "\nVeja as opções, escolhas e pontuação. Cenas de diálogo e combates de demonstração ao fundo não são reproduzidos.",
   "map.load_failed": "Não foi possível carregar o mapa. Confira se as versões do jogo e dos mods são iguais.",
-  "events.help": "Evento · Somente leitura · Clique em um nome para trocar de jogador · M para o mapa",
   "events.finished": " · Concluído",
   "events.history": "[b]Escolhas dos jogadores[/b]\n\n",
   "events.no_choice": "Ainda não escolheu",
@@ -86,7 +85,7 @@
   "status.timeout": "O anfitrião não responde. Confira se todos têm o mod e se o anfitrião permite espectadores.",
   "status.host_left": "O anfitrião saiu da partida.",
   "combat.perspective_tooltip": "Assistindo: {0} (use a roda do mouse para trocar de jogador)",
-  "combat.perspective": "Assistindo: {0} · Roda do mouse para trocar de jogador",
+  "combat.perspective": "Assistindo: {0}",
   "local.listen_failed": "Não foi possível escutar na porta de espectador {0}. Confira se ela está em uso.",
   "local.port": "Porta local de espectador: {0}",
   "status.watching": "Assistindo · Atual: {0}",
@@ -94,9 +93,9 @@
   "events.voters": "\n[blue]Votos: {0}[/blue]",
   "activity.choice": "{0} escolheu {1}",
   "activity.obtain": "{0} obteve {1}",
-  "settings.chat_display": "Exibição de mensagens",
-  "settings.chat_scroll": "Rolagem na tela",
-  "settings.chat_log": "Registro no canto inferior esquerdo",
+  "settings.comment_display": "Exibição de comentários",
+  "settings.comment_scroll": "Rolagem na tela",
+  "settings.comment_log": "Registro no canto inferior esquerdo",
   "activity.gold": "{0} ganhou {1} de ouro",
   "activity.upgrade": "{0} melhorou {1}",
   "activity.enchant": "{0} encantou {1}",
@@ -112,5 +111,6 @@
   "room.Shop": "Loja",
   "room.Event": "Evento",
   "room.RestSite": "Descanso",
-  "room.Map": "Mapa"
+  "room.Map": "Mapa",
+  "rest.help": "Local de descanso · Somente leitura · M: mapa"
 }

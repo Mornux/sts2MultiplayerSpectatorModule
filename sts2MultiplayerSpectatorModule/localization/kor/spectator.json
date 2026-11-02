@@ -1,7 +1,7 @@
 {
-  "chat.send_failed": "보낼 수 없습니다. 글자 수를 확인하거나 다시 시도하세요 · Esc로 취소",
-  "chat.help": "Enter로 전송 · Esc로 취소",
-  "chat.placeholder": "메시지 입력 (최대 100자)",
+  "comment.send_failed": "보낼 수 없습니다. 글자 수를 확인하거나 다시 시도하세요 · Esc로 취소",
+  "comment.help": "Enter로 전송 · Esc로 취소",
+  "comment.placeholder": "댓글 입력 (최대 100자)",
   "combat.own_run": "자신의 게임이 진행 중일 때는 관전 리플레이를 시작할 수 없습니다.",
   "combat.no_menu": "복원할 메뉴 화면이 없습니다.",
   "combat.loading": "전투 불러오는 중. 톱니바퀴 메뉴에서 관전을 종료할 수 있습니다…",
@@ -37,7 +37,6 @@
   "events.architect_score": "건축가 점수: ",
   "events.architect_hint": "\n선택지, 선택 기록, 점수를 볼 수 있습니다. 대화 연출과 배경 시범 전투는 재생하지 않습니다.",
   "map.load_failed": "지도를 불러오지 못했습니다. 게임과 모드 버전이 일치하는지 확인하세요.",
-  "events.help": "이벤트 관전 · 읽기 전용 · 이름을 클릭해 플레이어 전환 · M으로 지도",
   "events.finished": " · 완료",
   "events.history": "[b]플레이어 선택 기록[/b]\n\n",
   "events.no_choice": "아직 선택하지 않음",
@@ -86,7 +85,7 @@
   "status.timeout": "호스트가 응답하지 않습니다. 모두 모드를 설치했고 호스트가 관전을 허용했는지 확인하세요.",
   "status.host_left": "호스트가 게임을 나갔습니다.",
   "combat.perspective_tooltip": "관전 중: {0} (휠로 플레이어 전환)",
-  "combat.perspective": "관전: {0} · 휠로 플레이어 전환",
+  "combat.perspective": "관전: {0}",
   "local.listen_failed": "관전 포트 {0}에서 수신 대기를 시작하지 못했습니다. 사용 중인 포트인지 확인하세요.",
   "local.port": "로컬 관전 포트: {0}",
   "status.watching": "관전 중 · 현재: {0}",
@@ -94,9 +93,9 @@
   "events.voters": "\n[blue]투표: {0}[/blue]",
   "activity.choice": "{0} 님이 {1} 선택지를 선택했습니다",
   "activity.obtain": "{0} 님이 {1} 획득",
-  "settings.chat_display": "메시지 표시 방식",
-  "settings.chat_scroll": "화면에 흐르는 메시지",
-  "settings.chat_log": "왼쪽 아래 메시지 창",
+  "settings.comment_display": "댓글 표시 방식",
+  "settings.comment_scroll": "화면에 흐르는 메시지",
+  "settings.comment_log": "왼쪽 아래 메시지 창",
   "activity.gold": "{0}님이 골드 {1}을 획득했습니다",
   "activity.upgrade": "{0}님이 {1}을 강화했습니다",
   "activity.enchant": "{0}님이 {1}에 마법을 부여했습니다",
@@ -112,5 +111,6 @@
   "room.Shop": "상점",
   "room.Event": "이벤트",
   "room.RestSite": "휴식 장소",
-  "room.Map": "지도"
+  "room.Map": "지도",
+  "rest.help": "휴식 장소 관전 · 보기 전용 · M: 지도"
 }

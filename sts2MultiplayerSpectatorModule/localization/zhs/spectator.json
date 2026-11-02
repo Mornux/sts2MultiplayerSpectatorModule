@@ -1,7 +1,7 @@
 {
-  "chat.send_failed": "无法发送，请检查字数或稍后重试 · Esc 取消",
-  "chat.help": "回车发送 · Esc 取消",
-  "chat.placeholder": "输入弹幕（最多 100 字）",
+  "comment.send_failed": "无法发送，请检查字数或稍后重试 · Esc 取消",
+  "comment.help": "回车发送 · Esc 取消",
+  "comment.placeholder": "输入评论（最多 100 字）",
   "combat.own_run": "已有自己的跑局，不能启动观战回放。",
   "combat.no_menu": "没有可恢复的菜单场景。",
   "combat.loading": "正在载入原版战斗界面，可在齿轮菜单中退出观战……",
@@ -37,7 +37,6 @@
   "events.architect_score": "建筑师评分：",
   "events.architect_hint": "\n可查看选项、选择记录与评分；不重播对白表演和背景演示战斗。",
   "map.load_failed": "无法加载原版地图，请确认双方游戏和模组版本一致。",
-  "events.help": "事件观战 · 仅查看 · 点击名字切换玩家 · M 打开地图",
   "events.finished": " · 已完成",
   "events.history": "[b]玩家选择记录[/b]\n\n",
   "events.no_choice": "尚未选择",
@@ -86,7 +85,7 @@
   "status.timeout": "房主无响应，请确认双方已安装模组并由房主开启观战。",
   "status.host_left": "房主退出游戏。",
   "combat.perspective_tooltip": "正在观战：{0}（滚轮切换玩家）",
-  "combat.perspective": "观战：{0} · 滚轮切换玩家",
+  "combat.perspective": "观战：{0}",
   "local.listen_failed": "本地观战端口 {0} 无法监听，请检查端口占用。",
   "local.port": "本地观战端口：{0}",
   "status.watching": "观战中 · 当前: {0}",
@@ -94,9 +93,9 @@
   "events.voters": "\n[blue]投票：{0}[/blue]",
   "activity.choice": "{0} 选择了 {1} 选项",
   "activity.obtain": "{0} 获得了 {1}",
-  "settings.chat_display": "弹幕显示方式",
-  "settings.chat_scroll": "屏幕滚动",
-  "settings.chat_log": "左下角消息栏",
+  "settings.comment_display": "评论显示方式",
+  "settings.comment_scroll": "屏幕滚动",
+  "settings.comment_log": "左下角消息栏",
   "activity.gold": "{0} 获得了 {1} 金币",
   "activity.upgrade": "{0} 升级了 {1}",
   "activity.enchant": "{0} 附魔了 {1}",
@@ -112,5 +111,6 @@
   "room.Shop": "商店",
   "room.Event": "事件",
   "room.RestSite": "休息处",
-  "room.Map": "地图"
+  "room.Map": "地图",
+  "rest.help": "火堆观战 · 只读 · M 查看地图"
 }

@@ -1,7 +1,7 @@
 {
-  "chat.send_failed": "Gönderilemiyor. Uzunluğu kontrol et veya tekrar dene · İptal: Esc",
-  "chat.help": "Gönder: Enter · İptal: Esc",
-  "chat.placeholder": "Mesaj yaz (en fazla 100 karakter)",
+  "comment.send_failed": "Gönderilemiyor. Uzunluğu kontrol et veya tekrar dene · İptal: Esc",
+  "comment.help": "Gönder: Enter · İptal: Esc",
+  "comment.placeholder": "Yorum yaz (en fazla 100 karakter)",
   "combat.own_run": "Kendi koşun devam ederken izleyici tekrarını başlatamazsın.",
   "combat.no_menu": "Geri dönülebilecek bir menü ekranı yok.",
   "combat.loading": "Savaş yükleniyor. İzlemeyi bırakmak için dişli menüsünü kullan…",
@@ -37,7 +37,6 @@
   "events.architect_score": "Mimar puanı: ",
   "events.architect_hint": "\nSeçenekleri, seçim geçmişini ve puanı görüntüle. Diyalog sahneleri ve arka plandaki gösteri savaşları oynatılmaz.",
   "map.load_failed": "Harita yüklenemedi. Oyun ve mod sürümlerinin aynı olduğunu kontrol et.",
-  "events.help": "Olay izleme · Salt okunur · Oyuncu değiştirmek için ada tıkla · Harita: M",
   "events.finished": " · Tamamlandı",
   "events.history": "[b]Oyuncu seçimleri[/b]\n\n",
   "events.no_choice": "Henüz seçim yapılmadı",
@@ -86,7 +85,7 @@
   "status.timeout": "Ev sahibi yanıt vermiyor. Herkeste modun yüklü olduğunu ve ev sahibinin izleyicilere izin verdiğini kontrol et.",
   "status.host_left": "Ev sahibi oyundan çıktı.",
   "combat.perspective_tooltip": "İzlenen: {0} (oyuncu değiştirmek için fare tekerleği)",
-  "combat.perspective": "İzlenen: {0} · Oyuncu değiştirmek için fare tekerleği",
+  "combat.perspective": "İzlenen: {0}",
   "local.listen_failed": "İzleyici bağlantı noktası {0} dinlenemiyor. Kullanımda olup olmadığını kontrol et.",
   "local.port": "Yerel izleyici bağlantı noktası: {0}",
   "status.watching": "İzleniyor · Şu an: {0}",
@@ -94,9 +93,9 @@
   "events.voters": "\n[blue]Oylar: {0}[/blue]",
   "activity.choice": "{0}, {1} seçeneğini seçti",
   "activity.obtain": "{0}, {1} elde etti",
-  "settings.chat_display": "Mesaj görünümü",
-  "settings.chat_scroll": "Ekranda kayan yazı",
-  "settings.chat_log": "Sol alt mesaj günlüğü",
+  "settings.comment_display": "Yorum görünümü",
+  "settings.comment_scroll": "Ekranda kayan yazı",
+  "settings.comment_log": "Sol alt mesaj günlüğü",
   "activity.gold": "{0}, {1} altın kazandı",
   "activity.upgrade": "{0}, {1} kartını geliştirdi",
   "activity.enchant": "{0}, {1} kartını büyüledi",
@@ -112,5 +111,6 @@
   "room.Shop": "Dükkan",
   "room.Event": "Etkinlik",
   "room.RestSite": "Dinlenme yeri",
-  "room.Map": "Harita"
+  "room.Map": "Harita",
+  "rest.help": "Dinlenme yeri · Salt okunur · M: harita"
 }
