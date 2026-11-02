@@ -9,17 +9,33 @@ namespace sts2MultiplayerSpectatorModule.Scripts;
 public partial class SpectatorSession
 {
     internal event Action<ulong, string>? EventPeerReceived;
-    internal void SendEventPeer(string json)
+    internal event Action<string>? EventContextReceived;
+    internal void SendEventContext(string json)
+    {
+        if (!IsHost || ReplayRunning || !HasViewer) return;
+        foreach (var peer in ((NetHostGameService)RunManager.Instance.NetService).ConnectedPeers.Where(peer => peer.readyForBroadcasting))
+            RunManager.Instance.NetService.SendMessage(new SpectatorLocalRelay
+            { Payload = JsonSerializer.Serialize(new SpectatorPacket(SpectatorWireProtocol.Version, "event-context", _mapKey, json), WireJson) }, peer.peerId);
+    }
+
+    internal void SendEventPeer(string json, string context, long sequence)
     {
         if (!ReplayRunning && RunManager.Instance.NetService is NetClientGameService client && DisplayViewerId != 0)
         {
-            string payload = JsonSerializer.Serialize(new SpectatorPacket(2, "event-local", _mapKey, json), WireJson);
-            if (System.Text.Encoding.UTF8.GetByteCount(payload) <= SpectatorWireProtocol.MaxBytes)
-                client.SendMessage(new SpectatorLocalRelay { Payload = payload });
+            byte[] bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            if (bytes.Length > Events.EventStateBounds.MaxPageBytes) return;
+            foreach (var frame in BattleFrame.Split("event-local", context, sequence, (long)Godot.Time.GetTicksMsec(), bytes))
+                client.SendMessage(new SpectatorLocalRelay { Payload = JsonSerializer.Serialize(
+                    new SpectatorPacket(SpectatorWireProtocol.Version, "event-local", _mapKey, JsonSerializer.Serialize(frame, WireJson)), WireJson) });
         }
     }
     private bool HandleEventPeer(ulong sender, SpectatorPacket packet)
     {
+        if (packet.Kind == "event-context")
+        {
+            if (FromGameHost(sender)) EventContextReceived?.Invoke(packet.Text);
+            return true;
+        }
         if (packet.Kind != "event-local") return false;
         if (FromReadyPlayer(sender)) EventPeerReceived?.Invoke(sender, packet.Text);
         return true;

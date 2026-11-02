@@ -18,9 +18,8 @@ internal static class SpectatorInspectLayer
     }
     private static void Postfix(Control __result)
     {
-        if (SpectatorMap.Active == null && !SpectatorCombat.Watching || __result.GetParent() is CanvasLayer) return;
-        var layer = new CanvasLayer { Layer = 190 };
-        NGame.Instance!.AddChild(layer);
-        __result.Reparent(layer, false);
+        if (SpectatorMap.Active == null && !SpectatorCombat.Watching) return;
+        if (__result is NInspectCardScreen card) SpectatorUiLayers.RaiseInspection(card, card.Close);
+        else if (__result is NInspectRelicScreen relic) SpectatorUiLayers.RaiseInspection(relic, relic.Close);
     }
 }

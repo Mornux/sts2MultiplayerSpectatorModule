@@ -8,9 +8,9 @@ namespace sts2MultiplayerSpectatorModule.Scripts;
 
 // 显示方式仅保存在本机，不改变消息发送和其他玩家的设置。
 // Persist presentation locally without changing message delivery or other players' preferences.
-internal static class DanmakuSettings
+internal static class CommentSettings
 {
-    private const string ConfigPath = "user://spectator-chat.cfg";
+    private const string ConfigPath = "user://spectator-comment.cfg";
     private static bool? _scrolling;
     internal static bool Scrolling
     {
@@ -19,7 +19,8 @@ internal static class DanmakuSettings
             if (_scrolling == null)
             {
                 var config = new ConfigFile();
-                _scrolling = config.Load(ConfigPath) != Error.Ok || config.GetValue("chat", "scrolling", true).AsBool();
+                _scrolling = config.Load(ConfigPath) != Error.Ok
+                    || config.GetValue("comment", "scrolling", true).AsBool();
             }
             return _scrolling.Value;
         }
@@ -27,21 +28,21 @@ internal static class DanmakuSettings
         {
             _scrolling = value;
             var config = new ConfigFile();
-            config.SetValue("chat", "scrolling", value);
+            config.SetValue("comment", "scrolling", value);
             config.Save(ConfigPath);
         }
     }
 
-    // 所有客户端都可以在原版常规设置中切换弹幕显示。
-    // Offer chat display preferences in native general settings for every client.
+    // 所有客户端都可以在原版常规设置中切换评论显示。
+    // Offer comment display preferences in native general settings for every client.
     internal static void Add(NSettingsScreen screen)
     {
         var panel = screen.GetNode<NSettingsPanel>("%GeneralSettings");
         var content = panel.Content;
-        if (content.HasNode("SpectatorChatDisplay")) return;
-        var row = new HBoxContainer { Name = "SpectatorChatDisplay", CustomMinimumSize = new Vector2(0, 64) };
+        if (content.HasNode("SpectatorCommentDisplay")) return;
+        var row = new HBoxContainer { Name = "SpectatorCommentDisplay", CustomMinimumSize = new Vector2(0, 64) };
         var caption = (MegaRichTextLabel)content.GetNode<MegaRichTextLabel>("ShowMpDrawings/Label").Duplicate();
-        caption.Text = L.T("settings.chat_display");
+        caption.Text = L.T("settings.comment_display");
         caption.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         caption.CustomMinimumSize = new Vector2(330, 48);
         row.AddChild(caption);
@@ -49,7 +50,7 @@ internal static class DanmakuSettings
         button.Name = "Mode"; button.CustomMinimumSize = new Vector2(330, 48);
         row.AddChild(button);
         content.AddChild(row); content.MoveChild(row, 0);
-        void Refresh() => button.GetNode<MegaLabel>("Label").SetTextAutoSize(L.T(Scrolling ? "settings.chat_scroll" : "settings.chat_log"));
+        void Refresh() => button.GetNode<MegaLabel>("Label").SetTextAutoSize(L.T(Scrolling ? "settings.comment_scroll" : "settings.comment_log"));
         Refresh();
         button.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(_ => { Scrolling = !Scrolling; Refresh(); }));
         Callable.From(() =>

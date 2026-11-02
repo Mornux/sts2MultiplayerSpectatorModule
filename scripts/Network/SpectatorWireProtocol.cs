@@ -8,8 +8,10 @@ internal sealed record SpectatorPacket(int Version, string Kind, string Token, s
 
 internal static class SpectatorWireProtocol
 {
-    internal const int Version = 2;
+    internal const int Version = 3;
     internal const int MaxBytes = 24000;
+    internal const string CommentKind = "comment";
+    internal const string CommentSendKind = "comment-send";
     internal static readonly JsonSerializerOptions Json = new()
     { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 

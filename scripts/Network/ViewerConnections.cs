@@ -36,7 +36,7 @@ public partial class SpectatorSession
         var roster = Roster.Values.ToArray();
         RelayInk("viewer-roster", JsonSerializer.Serialize(new ViewerRoster(0, roster)));
         foreach (var pair in _viewers)
-            Send(pair.Key, new(2, "viewer-roster", pair.Value.Token, JsonSerializer.Serialize(new ViewerRoster(pair.Key, roster))));
+            Send(pair.Key, new(SpectatorWireProtocol.Version, "viewer-roster", pair.Value.Token, JsonSerializer.Serialize(new ViewerRoster(pair.Key, roster))));
     }
     private void ClearAuthor(ulong author)
     {
@@ -44,7 +44,7 @@ public partial class SpectatorSession
         if (IsHost)
         {
             string text = author.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            RelayInk("viewer-clear", text); BroadcastViewers(new(2, "viewer-clear", "", text));
+            RelayInk("viewer-clear", text); BroadcastViewers(new(SpectatorWireProtocol.Version, "viewer-clear", "", text));
         }
         SyncNativeInk();
     }
@@ -56,15 +56,15 @@ public partial class SpectatorSession
             if (packet.Kind == "color") { UpdateViewerColor(sender, packet.Color); return true; }
             if (packet.Kind == "leave") { RemoveViewer(sender, L.Wire("status.left")); return true; }
             if (packet.Kind == "clear") { ClearAuthor(sender); return true; }
-            if (packet.Kind is "draw" or "erase")
+            if (packet.Kind == "draw")
             {
                 var line = JsonSerializer.Deserialize<Sketch>(packet.Text);
                 if (!ValidSketch(line, _mapKey, _mapAct) || line!.Live && _time - viewer.LastSketch < 0.035) return true;
                 viewer.LastSketch = _time;
-                line = line with { Author = sender, Eraser = line.Eraser || packet.Kind == "erase" };
+                line = line with { Author = sender };
                 if (!ApplySketch(line)) return true;
                 string json = JsonSerializer.Serialize(line);
-                RelayInk("viewer-ink", json); BroadcastViewers(new(2, "viewer-ink", "", json)); SyncNativeInk();
+                RelayInk("viewer-ink", json); BroadcastViewers(new(SpectatorWireProtocol.Version, "viewer-ink", "", json)); SyncNativeInk();
                 return true;
             }
         }
@@ -78,7 +78,7 @@ public partial class SpectatorSession
             foreach (var item in roster.Viewers) _remoteViewers.Add(item.Id, item);
             if (Watching) _selfViewerId = roster.Self;
             _remoteViewer = roster.Viewers.FirstOrDefault()?.Id ?? 0;
-            _ink.RemoveAll(line => line.Author != 0 && !_remoteViewers.ContainsKey(line.Author));
+            _ink.RemoveAll(line => !_remoteViewers.ContainsKey(line.Author));
             ViewerRevision++; SyncNativeInk(); Updated?.Invoke(); return true;
         }
         if (packet.Kind == "viewer-clear")

@@ -12,7 +12,7 @@ public partial class SpectatorSession
         add => _activity.Received += value;
         remove => _activity.Received -= value;
     }
-    internal string MessageLogContext => Watching ? "watch:" + _token : CanSendDanmaku
+    internal string MessageLogContext => Watching ? "watch:" + _token : CanSendComment
         ? "run:" + System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(RunManager.Instance.DebugOnlyGetState()!) : "";
     internal static bool ValidActivity(ActivityNotice? notice) => ActivityMessageStream.IsValid(notice);
 

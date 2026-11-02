@@ -5,7 +5,7 @@ namespace sts2MultiplayerSpectatorModule.Scripts;
 
 // 回车输入、回车发送、Esc 取消；独立叠层在地图和战斗中都能显示。
 // Enter opens and submits, Escape cancels; an independent overlay works on maps and in combat.
-public partial class SpectatorDanmaku : CanvasLayer
+public partial class SpectatorComment : CanvasLayer
 {
     public static bool IsEditing { get; private set; }
     private SpectatorSession _session = null!;
@@ -13,7 +13,7 @@ public partial class SpectatorDanmaku : CanvasLayer
     private LineEdit _input = null!;
     private Label _hint = null!;
     private Font _font = null!;
-    private readonly Queue<SpectatorSession.Danmaku> _pending = new();
+    private readonly Queue<SpectatorSession.Comment> _pending = new();
     private readonly double[] _lanes = new double[6];
     private double _time;
     private const float Speed = 220;
@@ -29,7 +29,7 @@ public partial class SpectatorDanmaku : CanvasLayer
         var template = ResourceLoader.Load<PackedScene>("res://scenes/ui/multiplayer_player_state.tscn").Instantiate<Control>();
         _font = template.GetNode<MegaLabel>("%NameplateLabel").GetThemeFont("font");
         template.Free();
-        _editor = new Control { Name = "DanmakuInput", Visible = false };
+        _editor = new Control { Name = "CommentInput", Visible = false };
         _root.AddChild(_editor);
         _editor.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         var background = new ColorRect { Color = new Color(0, 0, 0, 0.12f) };
@@ -39,7 +39,7 @@ public partial class SpectatorDanmaku : CanvasLayer
         _editor.AddChild(form);
         form.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.CenterBottom);
         form.OffsetLeft = -460; form.OffsetRight = 460; form.OffsetTop = -130; form.OffsetBottom = -30;
-        _input = new LineEdit { MaxLength = 100, PlaceholderText = L.T("chat.placeholder"), CustomMinimumSize = new Vector2(920, 56) };
+        _input = new LineEdit { MaxLength = 100, PlaceholderText = L.T("comment.placeholder"), CustomMinimumSize = new Vector2(920, 56) };
         _input.AddThemeFontOverride("font", _font);
         _input.AddThemeFontSizeOverride("font_size", 30);
         form.AddChild(_input);
@@ -47,13 +47,13 @@ public partial class SpectatorDanmaku : CanvasLayer
         _hint.AddThemeFontOverride("font", _font);
         _hint.AddThemeFontSizeOverride("font_size", 24);
         form.AddChild(_hint);
-        _session.DanmakuReceived += Receive;
+        _session.CommentReceived += Receive;
         InitializeLog();
     }
 
-    private void Receive(SpectatorSession.Danmaku message)
+    private void Receive(SpectatorSession.Comment message)
     {
-        if (!DanmakuSettings.Scrolling) return;
+        if (!CommentSettings.Scrolling) return;
         if (_pending.Count >= 32) _pending.Dequeue();
         _pending.Enqueue(message);
     }
@@ -65,7 +65,7 @@ public partial class SpectatorDanmaku : CanvasLayer
         if (_session == null) return;
         _time += delta;
         UpdateLog(delta);
-        if (!_session.CanSendDanmaku)
+        if (!_session.CanSendComment)
         {
             CloseEditor();
             _pending.Clear();
@@ -73,7 +73,7 @@ public partial class SpectatorDanmaku : CanvasLayer
             Array.Clear(_lanes);
             return;
         }
-        if (!DanmakuSettings.Scrolling)
+        if (!CommentSettings.Scrolling)
         {
             _pending.Clear();
             foreach (var label in _root.GetChildren().OfType<Label>()) label.QueueFree();
@@ -102,7 +102,7 @@ public partial class SpectatorDanmaku : CanvasLayer
 
     public override void _ExitTree()
     {
-        if (_session != null) { _session.DanmakuReceived -= Receive; DisposeLog(); }
+        if (_session != null) { _session.CommentReceived -= Receive; DisposeLog(); }
         if (_editor != null) CloseEditor();
     }
 }

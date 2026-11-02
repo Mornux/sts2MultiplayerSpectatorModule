@@ -7,7 +7,7 @@ namespace sts2MultiplayerSpectatorModule.Scripts;
 
 // 待批准申请保留可点击通知，只有链接响应鼠标并呈现轻微变色。
 // Keep a clickable pending-request notice with link-only hover feedback.
-public partial class SpectatorDanmaku
+public partial class SpectatorComment
 {
     private RichTextLabel? _requestNotice;
     private void RefreshWatchRequests()

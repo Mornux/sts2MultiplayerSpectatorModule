@@ -27,24 +27,7 @@ public partial class SpectatorMap
         _topBar = ResourceLoader.Load<PackedScene>("res://scenes/ui/top_bar.tscn").Instantiate<NTopBar>();
         _topBar.SetMeta("spectator_view", true);
         _topBar.GetNode<NRunTimer>("RightAlignedStuff/TimerContainer").SetMeta("spectator_view", true);
-        // 未初始化牌堆的按钮需要跳过原版释放回调。
-        // Skip native deck cleanup for the discarded, uninitialized button.
-        foreach (var deck in _topBar.FindChildren("*", owned: false).OfType<NTopBarDeckButton>())
-            deck.SetMeta("spectator_view", true);
-        foreach (string path in new[] { "LeftAlignedStuff/TopBarHp", "LeftAlignedStuff/TopBarGold",
-            "LeftAlignedStuff/PotionMarginifier", "LeftAlignedStuff/Modifiers",
-            "RightAlignedStuff/SaveIndicator", "RightAlignedStuff/Map", "RightAlignedStuff/DeckContainer",
-            "LeftAlignedStuff/PortraitContainer/TopBarPortraitTip/AscensionIcon",
-            "LeftAlignedStuff/PortraitContainer/TopBarPortraitTip/AchievementLock", "ActiveScreenProxy", "GoldPopup" })
-        {
-            var node = _topBar.GetNodeOrNull(path);
-            if (node != null) { node.GetParent().RemoveChild(node); node.Free(); }
-        }
-        // 按保留项裁剪右栏，避免牌堆控件层级变化后残留默认数量。
-        // Keep only timer and gear so deck layout changes cannot leave a default card count.
-        foreach (var node in _topBar.GetNode<Control>("RightAlignedStuff").GetChildren())
-            if (node.Name != "TimerContainer" && node.Name != "PauseButton")
-            { node.GetParent().RemoveChild(node); node.Free(); }
+        TrimTopBar(_topBar);
         _topBar.MouseFilter = MouseFilterEnum.Ignore;
         _topBar.GetNode<Control>("LeftAlignedStuff").MouseFilter = MouseFilterEnum.Ignore;
         _topBar.GetNode<Control>("RightAlignedStuff").MouseFilter = MouseFilterEnum.Ignore;
@@ -54,6 +37,24 @@ public partial class SpectatorMap
         _topBar.GetNode<NTopBarFloorIcon>("%FloorIcon").Initialize(_displayRun!);
         _topBar.GetNode<NTopBarBossIcon>("%BossIcon").Initialize(_displayRun!);
         _timerLabel = _topBar.GetNode<MegaLabel>("RightAlignedStuff/TimerContainer/TimerLabel");
+    }
+
+    // Remove only known participant controls; preserve controls added by other mods.
+    internal static void TrimTopBar(NTopBar bar)
+    {
+        // 未初始化牌堆的按钮需要跳过原版释放回调。
+        // Skip native deck cleanup for the discarded, uninitialized button.
+        foreach (var deck in bar.FindChildren("*", owned: false).OfType<NTopBarDeckButton>())
+            deck.SetMeta("spectator_view", true);
+        foreach (string path in new[] { "LeftAlignedStuff/TopBarHp", "LeftAlignedStuff/TopBarGold",
+            "LeftAlignedStuff/PotionMarginifier", "LeftAlignedStuff/Modifiers",
+            "RightAlignedStuff/SaveIndicator", "RightAlignedStuff/Padding", "RightAlignedStuff/Map", "RightAlignedStuff/DeckContainer",
+            "LeftAlignedStuff/PortraitContainer/TopBarPortraitTip/AscensionIcon",
+            "LeftAlignedStuff/PortraitContainer/TopBarPortraitTip/AchievementLock", "ActiveScreenProxy", "GoldPopup" })
+        {
+            var node = bar.GetNodeOrNull(path);
+            if (node != null) { node.GetParent().RemoveChild(node); node.Free(); }
+        }
     }
 
     // 给原版信息控件提供只读房间状态，悬浮文字与图标继续使用原版逻辑。

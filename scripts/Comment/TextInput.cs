@@ -3,10 +3,10 @@ using MegaCrit.Sts2.Core.Nodes.CommonUi;
 
 namespace sts2MultiplayerSpectatorModule.Scripts;
 
-// 处理弹幕文字输入。
-// Handle danmaku text input.
+// 处理评论文字输入。
+// Handle comment text input.
 
-public partial class SpectatorDanmaku
+public partial class SpectatorComment
 {
     private Key _consumedKey;
 
@@ -23,10 +23,10 @@ public partial class SpectatorDanmaku
             _consumedKey = key.Keycode;
             GetViewport().SetInputAsHandled();
             if (!enter || string.IsNullOrWhiteSpace(_input.Text)) CloseEditor();
-            else if (_session.SendDanmaku(_input.Text)) CloseEditor();
-            else _hint.Text = L.T("chat.send_failed");
+            else if (_session.SendComment(_input.Text)) CloseEditor();
+            else _hint.Text = L.T("comment.send_failed");
         }
-        else if (enter && _session.CanSendDanmaku && NModalContainer.Instance?.OpenModal == null
+        else if (enter && _session.CanSendComment && NModalContainer.Instance?.OpenModal == null
             && GetViewport().GuiGetFocusOwner() is not (LineEdit or TextEdit))
         {
             _consumedKey = key.Keycode;
@@ -34,7 +34,7 @@ public partial class SpectatorDanmaku
             IsEditing = true;
             RefreshLog();
             _input.Clear();
-            _hint.Text = L.T("chat.help");
+            _hint.Text = L.T("comment.help");
             NHotkeyManager.Instance?.AddBlockingScreen(this);
             _input.GrabFocus();
             GetViewport().SetInputAsHandled();

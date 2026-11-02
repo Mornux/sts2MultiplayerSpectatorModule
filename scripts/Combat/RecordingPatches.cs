@@ -8,8 +8,8 @@ namespace sts2MultiplayerSpectatorModule.Scripts;
 // 接入原版战斗记录入口。
 // Hook native combat recording.
 
-// 钩子只影响观战回放；房主和正式玩家继续原版流程。
-// Scope read-only behavior to spectator replays, leaving live participants unchanged.
+// 回调只采集已完成的原版记录；采集函数自行隔离异常，正式玩家继续原版流程。
+// Observe completed native records; capture callbacks contain their failures and leave native play unchanged.
 [HarmonyPatch(typeof(CombatReplayWriter), nameof(CombatReplayWriter.RecordInitialState))]
 internal static class SpectatorBattleStart
 {
@@ -26,6 +26,7 @@ internal static class SpectatorBattleReady
 internal static class SpectatorBattleEvents
 {
     private static IEnumerable<MethodBase> TargetMethods() => new[] { "RecordGameAction", "RecordActionResume", "RecordPlayerChoice" }
-        .Select(name => AccessTools.DeclaredMethod(typeof(CombatReplayWriter), name));
+        .Select(name => AccessTools.DeclaredMethod(typeof(CombatReplayWriter), name)
+            ?? throw new MissingMethodException(typeof(CombatReplayWriter).FullName, name));
     private static void Postfix(CombatReplayWriter __instance) => SpectatorCombat.Instance?.HostEvent(__instance);
 }

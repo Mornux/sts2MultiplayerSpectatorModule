@@ -10,16 +10,14 @@ using MegaCrit.Sts2.Core.Nodes.TopBar;
 
 namespace sts2MultiplayerSpectatorModule.Scripts;
 
-[HarmonyPatch(typeof(NTopBarPauseButton), "OnRelease")]
-internal static class SpectatorMapPause
+// Keep the native node binding, localization and signal setup; only its service lookup is contextual.
+[HarmonyPatch(typeof(NPauseMenu), nameof(NPauseMenu._Ready))]
+internal static class SpectatorPauseSetup
 {
-    private static bool Prefix(NTopBarPauseButton __instance)
-    {
-        var owner = SpectatorMap.Find(__instance);
-        if (owner == null) return true;
-        owner.TogglePause();
-        return false;
-    }
+    private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>
+        SpectatorDisplayService.ReplaceReads(instructions);
+
+    private static void Postfix(NPauseMenu __instance) => SpectatorMap.Find(__instance)?.ConfigurePauseMenu(__instance);
 }
 
 // 原版菜单照常打开设置与百科，只替换会修改参战跑局的生命周期。
@@ -29,7 +27,7 @@ internal static class SpectatorMapPauseLifecycle
 {
     private static IEnumerable<MethodBase> TargetMethods()
     {
-        foreach (string method in new[] { "_Ready", "_ExitTree", "OnSubmenuOpened", "OnSubmenuClosed",
+        foreach (string method in new[] { "_ExitTree", "OnSubmenuOpened", "OnSubmenuClosed",
             "OnBackOrResumeButtonPressed", "OnGiveUpButtonPressed", "OnDisconnectButtonPressed", "OnSaveAndQuitButtonPressed" })
             yield return AccessTools.DeclaredMethod(typeof(NPauseMenu), method);
     }
@@ -38,7 +36,6 @@ internal static class SpectatorMapPauseLifecycle
         if (SpectatorMap.Find(__instance) is not { } owner) return true;
         switch (__originalMethod.Name)
         {
-            case "_Ready": owner.BindPauseMenu(__instance); break;
             case "OnSubmenuOpened": NHotkeyManager.Instance?.AddBlockingScreen(__instance); break;
             case "OnSubmenuClosed":
                 __instance.GetNode<NBackButton>("%BackButton").Disable();
@@ -53,8 +50,8 @@ internal static class SpectatorMapPauseLifecycle
     }
 }
 
-// 原版说明挂到观战叠层，避免被高层地图遮挡；内容和定位仍由原版生成。
-// Mount native tips on the spectator overlay; retain native content and positioning.
+// 原版说明显示在观战窗口和遮罩上方；内容、定位与销毁仍由原版处理。
+// Keep native tooltip content, positioning and disposal above spectator windows and backstops.
 [HarmonyPatch]
 internal static class SpectatorMapHoverTips
 {
@@ -63,7 +60,15 @@ internal static class SpectatorMapHoverTips
             && method.GetParameters()[1].ParameterType == typeof(IEnumerable<IHoverTip>));
     private static void Postfix(Control owner, NHoverTipSet? __result)
     {
-        if (__result != null) SpectatorMap.Find(owner)?.ShowHoverTip(__result);
+        if (__result == null) return;
+        var map = SpectatorMap.Find(owner);
+        if (map == null && !SpectatorCombat.Owns(owner) && !SpectatorUiLayers.OwnsInspection(owner)) return;
+        SpectatorUiLayers.RaiseHoverTip(__result);
+        // Native Remove queues disposal. Stop following an owner freed earlier in the same frame.
+        var tip = __result;
+        Action stopFollowing = () => { if (GodotObject.IsInstanceValid(tip)) tip.SetProcess(false); };
+        owner.TreeExiting += stopFollowing;
+        tip.TreeExiting += () => { if (GodotObject.IsInstanceValid(owner)) owner.TreeExiting -= stopFollowing; };
     }
 }
 
@@ -86,15 +91,16 @@ internal static class SpectatorMapModalOpen
 {
     private static void Postfix(NModalContainer __instance, Node modalToCreate)
     {
-        if (modalToCreate.GetParent() == __instance) SpectatorMap.Active?.ShowModal(modalToCreate);
+        if (modalToCreate.GetParent() == __instance) SpectatorMap.Active?.ShowModal(__instance);
     }
 }
 
 [HarmonyPatch(typeof(NModalContainer), nameof(NModalContainer.Clear))]
 internal static class SpectatorMapModalClose
 {
-    private static void Prefix(NModalContainer __instance)
+    private static void Finalizer(NModalContainer __instance, Exception? __exception)
     {
-        if (__instance.OpenModal is Node modal) SpectatorMap.Find(modal)?.DismissModal();
+        // A failed Clear may leave an interactive modal; keep it above the map until a retry succeeds.
+        if (__exception == null || __instance.OpenModal == null) SpectatorUiLayers.Restore(__instance);
     }
 }

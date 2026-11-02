@@ -30,7 +30,7 @@ public partial class SpectatorSession
                 if (!SteamFriends.GetFriendGamePlayed(friend, out var info)
                     || info.m_gameID.m_GameID != SteamUtils.GetAppID().m_AppId) continue;
                 _friends[friend.m_SteamID] = L.T("friends.no_response");
-                Send(friend.m_SteamID, new(2, "query", _discovery));
+                Send(friend.m_SteamID, new(SpectatorWireProtocol.Version, "query", _discovery));
             }
         FriendsChanged?.Invoke();
     }
@@ -44,7 +44,7 @@ public partial class SpectatorSession
         _lastSequence = 0;
         _received = _heartbeat = _time;
         SetStatus(L.T("status.requesting"));
-        Send(host, new(2, "watch", _token, Color: DrawingColor));
+        Send(host, new(SpectatorWireProtocol.Version, "watch", _token, Color: DrawingColor));
     }
 
     // 本地观战复用相同协议和界面，只替换传输和名字来源。
@@ -61,7 +61,7 @@ public partial class SpectatorSession
         SetStatus(L.T("status.connecting_local"));
         MegaCrit.Sts2.Core.Helpers.TaskHelper.RunSafely(Local.Connect(ip, spectatorPort, () =>
         {
-            if (_host == SpectatorLocal.Host) Send(_host, new(2, "watch", _token, Name: _localName, Color: DrawingColor));
+            if (_host == SpectatorLocal.Host) Send(_host, new(SpectatorWireProtocol.Version, "watch", _token, Name: _localName, Color: DrawingColor));
         }));
         return true;
     }
@@ -77,7 +77,18 @@ public partial class SpectatorSession
         if (SpectatorLocal.IsLocal(id)) return _remoteViewerName;
         var platform = Watching ? WatchPlatform : RunManager.Instance.IsInProgress
             ? RunManager.Instance.NetService.Platform : SteamInitializer.Initialized ? PlatformType.Steam : PlatformType.None;
-        return PlatformUtil.GetPlayerNameRaw(platform, id);
+        if (!Watching) return PlatformUtil.GetPlayerNameRaw(platform, id);
+        // 备注属于当前观众；昵称尚未就绪或本地连接时使用房主已经同步的名单。
+        // Friend nicknames belong to this viewer; received roster names also work offline and before persona data arrives.
+        if (platform == PlatformType.Steam && SteamInitializer.Initialized)
+        {
+            string nickname = SteamFriends.GetPlayerNickname(new CSteamID(id));
+            if (!string.IsNullOrWhiteSpace(nickname)) return CleanName(nickname);
+            string persona = PlatformUtil.GetPlayerNameRaw(platform, id);
+            if (!string.IsNullOrWhiteSpace(persona) && persona != id.ToString()) return CleanName(persona);
+        }
+        string? received = Map?.Players.FirstOrDefault(player => player.Id == id)?.Name;
+        return !string.IsNullOrWhiteSpace(received) ? received : PlatformUtil.GetPlayerNameRaw(PlatformType.None, id);
     }
 
     private bool CanContactViewer(ulong id) => SpectatorLocal.IsLocal(id)
@@ -85,7 +96,7 @@ public partial class SpectatorSession
 
     public void StopWatching(string? status = null)
     {
-        if (_host != 0) Send(_host, new(2, "leave", _token));
+        if (_host != 0) Send(_host, new(SpectatorWireProtocol.Version, "leave", _token));
         _host = 0;
         _remoteViewers.Clear(); _selfViewerId = 0;
         _local?.Disconnect();
@@ -120,7 +131,7 @@ public partial class SpectatorSession
     private void RemoveViewer(ulong id, string reason)
     {
         if (!_viewers.Remove(id, out var viewer)) return;
-        Send(id, new(2, "end", viewer.Token, reason));
+        Send(id, new(SpectatorWireProtocol.Version, "end", viewer.Token, reason));
         if (SpectatorLocal.IsLocal(id)) _local?.ClosePeer(id);
         ClearAuthor(id); PublishRoster();
     }

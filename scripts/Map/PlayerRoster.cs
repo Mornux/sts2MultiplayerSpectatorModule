@@ -3,7 +3,6 @@ using MegaCrit.Sts2.addons.mega_text;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
-using MegaCrit.Sts2.Core.Unlocks;
 using static sts2MultiplayerSpectatorModule.Scripts.SpectatorSession;
 
 namespace sts2MultiplayerSpectatorModule.Scripts;
@@ -28,7 +27,7 @@ public partial class SpectatorMap
 
     private void UpdatePlayerList(MapSnapshot snapshot)
     {
-        var players = snapshot.Players ?? Array.Empty<MapPlayer>();
+        var players = snapshot.Players;
         if (_playerList == null)
         {
             _playerList = new VBoxContainer { Name = "SpectatorPlayers", Position = new Vector2(0, 145),
@@ -43,7 +42,7 @@ public partial class SpectatorMap
             var source = players[index];
             if (!_playerRows.TryGetValue(source.Id, out var row))
             {
-                var model = Player.CreateForNewRun(ModelDb.GetById<CharacterModel>(ModelId.Deserialize(source.CharacterId)), UnlockState.all, source.Id);
+                var model = SpectatorDisplayModels.Create(ModelDb.GetById<CharacterModel>(ModelId.Deserialize(source.CharacterId)), source.Id);
                 var (root, name, health) = RosterVisuals.Create(model.Character.IconTexture, withHealth: true);
                 root.Name = "Player" + source.Id;
                 // 保留原版动态选框，鼠标悬停和查看详情时使用同一动画。

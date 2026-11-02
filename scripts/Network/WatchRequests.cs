@@ -24,7 +24,7 @@ public partial class SpectatorSession
         }
         _requests[sender] = request with { Seen = _time };
         if (request.Approved && AllowSpectators) return false;
-        Send(sender, new(2, "wait", packet.Token, L.Wire("status.await_approval")));
+        Send(sender, new(SpectatorWireProtocol.Version, "wait", packet.Token, L.Wire("status.await_approval")));
         return true;
     }
 }

@@ -1,4 +1,5 @@
 using System.Reflection;
+using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -24,7 +25,8 @@ internal static class SpectatorBattleNoInput
         yield return AccessTools.DeclaredMethod(typeof(NRun), "ShowGameOverScreen");
         yield return AccessTools.DeclaredMethod(typeof(NCombatUi), "OnCombatWon");
     }
-    private static bool Prefix() => !SpectatorCombat.Watching;
+    private static bool Prefix(object __instance) => __instance is Node node
+        ? !SpectatorCombat.Owns(node) : !SpectatorCombat.OwnsActionQueue(__instance);
 }
 
 [HarmonyPatch]
@@ -32,9 +34,9 @@ internal static class SpectatorBattleReadOnlyHand
 {
     private static IEnumerable<MethodBase> TargetMethods() => new[] { "CanPlayCards" }
         .Select(name => AccessTools.DeclaredMethod(typeof(NPlayerHand), name));
-    private static bool Prefix(ref bool __result)
+    private static bool Prefix(NPlayerHand __instance, ref bool __result)
     {
-        if (!SpectatorCombat.Watching) return true;
+        if (!SpectatorCombat.Owns(__instance)) return true;
         __result = false;
         return false;
     }

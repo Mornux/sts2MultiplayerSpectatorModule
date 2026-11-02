@@ -17,7 +17,11 @@ public partial class SpectatorCombat
     internal void Checksum(NetChecksumData checksum)
     {
         if (!CombatManager.Instance.IsInProgress) return;
-        if (_session.IsHost && _hostCombat.Length != 0) Send("check", checksum.id, checksum);
+        if (_session.IsHost && _hostCombat.Length != 0)
+        {
+            try { Send("check", checksum.id, checksum); }
+            catch (Exception error) { StopHostCapture("checksum", error); }
+        }
         else if (_session.ReplayRunning && !_closing) CheckHash(checksum, false);
     }
 

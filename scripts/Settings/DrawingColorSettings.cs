@@ -89,7 +89,7 @@ internal static class SpectatorColorSettings
 {
     private static void Postfix(NSettingsScreen __instance)
     {
-        DanmakuSettings.Add(__instance);
+        CommentSettings.Add(__instance);
         SpectatorMap.Find(__instance)?.AddColorSettings(__instance);
     }
 }

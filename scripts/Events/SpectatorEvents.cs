@@ -1,7 +1,5 @@
-using System.Reflection;
 using System.Text.Json;
 using Godot;
-using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Events;
@@ -15,8 +13,8 @@ using MegaCrit.Sts2.Core.Runs;
 
 namespace sts2MultiplayerSpectatorModule.Scripts.Events;
 
-// 读取房主的所有事件实例，并接收玩家端实际页面的补充，不在观众端运行事件。
-// Read host event instances plus actual participant pages without running events on the viewer.
+// 聚合玩家实际页面，原版模型作为后备；观众端不执行事件。
+// Aggregate actual participant pages with model fallbacks, without executing events on the viewer.
 public partial class SpectatorEvents : Node
 {
     internal static SpectatorEvents? Instance { get; private set; }
@@ -27,6 +25,12 @@ public partial class SpectatorEvents : Node
     private readonly BattleAssembler _assembler = new();
     private readonly Dictionary<ulong, List<string>> _choices = new();
     private readonly Dictionary<ulong, (EventPeerState State, double Seen)> _peers = new();
+    private readonly Dictionary<ulong, BattleAssembler> _peerAssemblers = new();
+    private EventContext? _context;
+    private object? _localInstance;
+    private string _localInstanceId = Guid.NewGuid().ToString("N"), _lastLocal = "";
+    private long _localSequence;
+    private double _contextSent, _localSent;
     private AbstractRoom? _room;
     private string _key = Guid.NewGuid().ToString("N"), _last = "", _receivedKey = "";
     private long _sequence, _receivedSequence;
@@ -34,6 +38,7 @@ public partial class SpectatorEvents : Node
     private ulong _viewer;
     private EventState? _state;
     private bool _showMap;
+    private readonly HashSet<string> _warnings = new();
 
     public void Initialize(SpectatorSession session, SpectatorMap map, SpectatorCombat combat)
     {
@@ -43,37 +48,31 @@ public partial class SpectatorEvents : Node
         _view.Hide();
         session.BattleReceived += Receive;
         session.EventPeerReceived += ReceivePeer;
+        session.EventContextReceived += ReceiveContext;
     }
 
-    internal void Begin()
+    private bool CanCapture(EventSynchronizer? source = null) => _session != null
+        && !_session.ReplayRunning && !_session.Watching
+        && (source == null || ReferenceEquals(source, RunManager.Instance.EventSynchronizer));
+
+    private void Warn(string operation, Exception error)
     {
-        if (_session.ReplayRunning || _session.Watching) return;
-        _room = RunManager.Instance.DebugOnlyGetState()?.BaseRoom;
-        _key = Guid.NewGuid().ToString("N"); _sequence = 0; _last = "";
-        _choices.Clear(); _peers.Clear();
+        if (_warnings.Count < 64 && _warnings.Add(operation))
+            GD.PushWarning("[Spectator] Event " + operation + ": " + error.Message);
     }
 
-    // 在原版执行前记录文字，快速切页也不会丢失玩家选择。
-    // Record text before native execution so fast page changes cannot hide choices.
-    internal void Chosen(EventSynchronizer source, Player player, int index, bool vote)
+    internal void Begin(EventSynchronizer? source = null)
     {
-        try { RecordChoice(source, player, index, vote); }
-        catch (Exception error) { GD.PushWarning("[Spectator] Event choice: " + error.Message); }
-    }
-    private void RecordChoice(EventSynchronizer source, Player player, int index, bool vote)
-    {
-        if (_session.ReplayRunning || _session.Watching || source != RunManager.Instance.EventSynchronizer) return;
-        var model = source.GetEventForPlayer(player);
-        if (index < 0 || index >= model.CurrentOptions.Count) return;
-        var title = Format(model.CurrentOptions[index].Title, model);
-        if (title.Length == 0) title = Format(model.CurrentOptions[index].Description, model);
-        if (title.Length > 800) title = title[..800];
-        if (!_choices.TryGetValue(player.NetId, out var choices)) _choices[player.NetId] = choices = new();
-        if (choices.Count >= 32) choices.RemoveAt(0);
-        choices.Add((vote ? L.Wire("events.vote_prefix") : model.IsShared ? L.Wire("events.final_prefix") : L.Wire("events.choice_prefix")) + title);
-        if (vote || !model.IsShared)
-            ActivityCapture.Record(player, "choice", () => title);
-        _last = "";
+        try
+        {
+            if (!CanCapture(source)) return;
+            _room = RunManager.Instance.DebugOnlyGetState()?.BaseRoom;
+            _key = Guid.NewGuid().ToString("N"); _sequence = 0; _last = "";
+            _choices.Clear(); _choiceCaptures.Clear(); _peers.Clear(); _peerAssemblers.Clear(); _warnings.Clear();
+            _context = null;
+            _localInstance = null; _lastLocal = "";
+        }
+        catch (Exception error) { Warn("begin", error); }
     }
 
     internal static string Format(LocString? source, EventModel model)
@@ -89,28 +88,100 @@ public partial class SpectatorEvents : Node
 
     internal EventPlayerState Capture(EventModel model, bool local)
     {
-        try { return CapturePage(model, local); }
+        ulong id = 0;
+        string eventId = "unknown", name = "";
+        string[] choices = [];
+        EventPlayerState? generic = null;
+        try
+        {
+            var owner = model.Owner ?? throw new InvalidOperationException("Event owner is unavailable.");
+            id = owner.NetId;
+            eventId = model.Id.ToString();
+            name = _session.PlayerName(id);
+            choices = _choices.GetValueOrDefault(id)?.ToArray() ?? [];
+            var page = GenericEventAdapter.Capture(model, local, owner, eventId, name, choices);
+            if (!EventStateBounds.Valid(page)) throw new InvalidOperationException("Event page exceeds the spectator page limits.");
+            generic = page;
+            return EventAdapters.Enrich(model, generic, local, error => Warn("adapter " + eventId, error));
+        }
         catch (Exception error)
         {
-            GD.PushWarning("[Spectator] Event page " + model.Id + ": " + error.Message);
-            return GenericEventAdapter.Capture(model, local, _session.PlayerName(model.Owner!.NetId),
-                _choices.GetValueOrDefault(model.Owner.NetId)?.ToArray() ?? []);
+            Warn("page " + eventId, error);
+            // Never access the failed model a second time while constructing the last-resort page.
+            return generic ?? GenericEventAdapter.Unavailable(id, eventId, name, choices, local);
         }
-    }
-    private EventPlayerState CapturePage(EventModel model, bool local)
-    {
-        var owner = model.Owner!;
-        var result = GenericEventAdapter.Capture(model, local, _session.PlayerName(owner.NetId),
-            _choices.GetValueOrDefault(owner.NetId)?.ToArray() ?? []);
-        return EventAdapters.Enrich(model, result, local);
     }
 
     public override void _Process(double delta)
     {
+        try { ProcessEvents(delta); }
+        catch (Exception error) { Warn("poll", error); }
+    }
+
+    private bool IsFinished(EventModel model)
+    {
+        try { return model.IsFinished; }
+        catch (Exception error) { Warn("finished", error); return false; }
+    }
+
+    private EventModel[] NativeModels(RunState run)
+    {
+        if (run.BaseRoom is not EventRoom) return [];
+        var models = RunManager.Instance.EventSynchronizer.Events.ToArray();
+        return NMapScreen.Instance is { IsOpen: true, IsTravelEnabled: true } && models.All(IsFinished) ? [] : models;
+    }
+
+    private ProvidedEventPage? CaptureLocal(RunState run, EventModel[] models)
+    {
+        var player = run.Players.FirstOrDefault(player => player.NetId == RunManager.Instance.NetService.NetId);
+        if (player == null) return null;
+        var model = models.FirstOrDefault(model => model.Owner?.NetId == player.NetId);
+        return EventPageProviders.Capture(new(run, player, model), _session.PlayerName(player.NetId))
+            ?? (model == null ? null : new ProvidedEventPage(model, Capture(model, true)));
+    }
+
+    private EventPlayerState[] CapturePlayers(RunState run, EventModel[] models, ProvidedEventPage? local)
+    {
+        var pages = new List<EventPlayerState>();
+        ulong localId = RunManager.Instance.NetService.NetId;
+        foreach (var player in run.Players.Take(4))
+        {
+            try
+            {
+                if (player.NetId == localId)
+                {
+                    if (local != null) pages.Add(local.Page);
+                    continue;
+                }
+                var model = models.FirstOrDefault(model => model.Owner?.NetId == player.NetId);
+                var fallback = model == null ? null : Capture(model, false);
+                if (_peers.TryGetValue(player.NetId, out var peer))
+                {
+                    var page = peer.State.Player;
+                    if (page != null && (page.Source == EventPageSource.Provider || model != null && page.EventId == model.Id.ToString()))
+                    {
+                        if (_time - peer.Seen < 3) { pages.Add(page); continue; }
+                        // Keep known contents explicitly stale rather than silently claiming a live page.
+                        if (fallback == null) { pages.Add(page with { Stale = true }); continue; }
+                    }
+                }
+                if (fallback != null) pages.Add(fallback);
+            }
+            catch (Exception error) { Warn("player page", error); }
+        }
+        return pages.ToArray();
+    }
+
+    private void ProcessEvents(double delta)
+    {
         _time += delta;
         _assembler.Expire(Time.GetTicksMsec());
-        bool visible = _session.Watching && _state?.Players.Length > 0 && !_state.InCombat && !_combat.HasCombat && !_showMap;
-        _map.SetEventContent(visible ? _view : null);
+        foreach (var assembler in _peerAssemblers.Values) assembler.Expire(Time.GetTicksMsec());
+        bool current = _state != null && _state.Map == _session.Map?.Key && _state.Floor == _session.Map.Floor
+            && _state.Room == _session.Map.Room;
+        bool available = _session.Watching && current && _state!.Players.Length > 0 && !_state.InCombat && !_combat.HasCombat;
+        int priority = _state?.Players.Any(player => player.Source == EventPageSource.Provider) == true ? 100 : 10;
+        _map.UpdateRoomContent(_view, available && !_showMap, priority, available);
         if (!_session.Watching) { _state = null; _receivedKey = ""; _receivedSequence = 0; }
         if ((_tick += delta) < 0.25) return;
         _tick = 0;
@@ -118,43 +189,105 @@ public partial class SpectatorEvents : Node
         var run = RunManager.Instance.DebugOnlyGetState();
         if (run == null) return;
         if (!ReferenceEquals(_room, run.BaseRoom)) Begin();
-        if (!_session.IsHost && _session.DisplayViewerId != 0 && run.BaseRoom is EventRoom
-            && RunManager.Instance.EventSynchronizer.Events.FirstOrDefault(model => model.Owner?.NetId == RunManager.Instance.NetService.NetId) is { } local)
+        var models = NativeModels(run);
+        var local = CaptureLocal(run, models);
+        if (!_session.IsHost)
         {
-            string page = JsonSerializer.Serialize(new EventPeerState(local.Id.ToString(), run.TotalFloor, Capture(local, true)), SpectatorSession.WireJson);
-            if (page != _last || _time - _sent >= 1) { _session.SendEventPeer(page); _last = page; _sent = _time; }
+            if (_session.DisplayViewerId != 0 && _context is { } context && context.Floor == run.TotalFloor)
+                SendLocalPage(context, local);
+            return;
         }
-        if (!_session.IsHost || !_session.HasViewer) return;
-        bool active = run.BaseRoom is EventRoom && !(NMapScreen.Instance is { IsOpen: true, IsTravelEnabled: true }
-            && RunManager.Instance.EventSynchronizer.Events.All(model => model.IsFinished));
-        var players = active ? RunManager.Instance.EventSynchronizer.Events.Where(model => model.Owner != null).Take(4).Select(model =>
+        if (!_session.HasViewer) { _context = null; _peers.Clear(); return; }
+        if (_context == null || _context.Map != _session.CurrentMapKey || _context.Floor != run.TotalFloor)
         {
-            var player = Capture(model, model.Owner!.NetId == RunManager.Instance.NetService.NetId);
-            if (_peers.TryGetValue(player.Id, out var peer) && _time - peer.Seen < 3
-                && peer.State.Floor == run.TotalFloor && peer.State.EventId == player.EventId)
-                player = peer.State.Player with { Name = player.Name, Choices = player.Choices, Vote = player.Vote };
-            return player;
-        }).ToArray() : [];
-        var state = new EventState(_key, _session.CurrentMapKey, run.TotalFloor, players,
-            run.CurrentRoom is not EventRoom);
+            _key = Guid.NewGuid().ToString("N");
+            _context = new(_key, _session.CurrentMapKey, run.TotalFloor);
+            _peers.Clear(); _peerAssemblers.Clear(); _contextSent = -10;
+        }
+        if (_time - _contextSent >= 1)
+        {
+            _session.SendEventContext(JsonSerializer.Serialize(_context));
+            _contextSent = _time;
+        }
+        var players = CapturePlayers(run, models, local);
+        var state = new EventState(_context.Key, _session.CurrentMapKey, run.TotalFloor, players, run.CurrentRoom is CombatRoom,
+            run.CurrentRoom?.RoomType.ToString() ?? "Map");
         string json = JsonSerializer.Serialize(state, SpectatorSession.WireJson);
         if (_viewer == _session.ViewerRevision && json == _last && _time - _sent < 1) return;
-        _viewer = _session.ViewerRevision; _last = json; _sent = _time;
         var bytes = System.Text.Encoding.UTF8.GetBytes(json);
-        if (bytes.Length > 256000) return;
-        _session.SendFragments("event-view", _key, _sequence, bytes);
+        if (bytes.Length > BattleAssembler.MaxBytes) { Warn("state size", new InvalidOperationException("Event pages exceed the snapshot limit.")); return; }
+        _session.SendFragments("event-view", _context.Key, _sequence, bytes);
+        _viewer = _session.ViewerRevision; _last = json; _sent = _time;
         _sequence++;
+    }
+
+    private void SendLocalPage(EventContext context, ProvidedEventPage? local)
+    {
+        if (!ReferenceEquals(_localInstance, local?.Instance))
+        {
+            _localInstance = local?.Instance;
+            _localInstanceId = Guid.NewGuid().ToString("N");
+            _lastLocal = "";
+        }
+        string contents = JsonSerializer.Serialize(local?.Page, SpectatorSession.WireJson);
+        if (contents == _lastLocal && _time - _localSent < 1) return;
+        long sequence = _localSequence + 1;
+        var page = new EventPeerState(context.Key, _localInstanceId, sequence, context.Map, context.Floor, local?.Page);
+        string json = JsonSerializer.Serialize(page, SpectatorSession.WireJson);
+        if (System.Text.Encoding.UTF8.GetByteCount(json) > EventStateBounds.MaxPageBytes)
+        { Warn("local page size", new InvalidOperationException("Local event page exceeds the transfer limit.")); return; }
+        _session.SendEventPeer(json, context.Key, sequence);
+        _localSequence = sequence; _lastLocal = contents; _localSent = _time;
+    }
+
+    private void ReceiveContext(string json)
+    {
+        try
+        {
+            var context = JsonSerializer.Deserialize<EventContext>(json);
+            if (context is not { Key.Length: 32, Map.Length: 32, Floor: >= 0 } || _session.Watching || _session.ReplayRunning) return;
+            var run = RunManager.Instance.DebugOnlyGetState();
+            if (run == null || context.Floor != run.TotalFloor) return;
+            if (_context?.Key != context.Key) { _lastLocal = ""; _localSequence = 0; }
+            _context = context;
+        }
+        catch (JsonException) { }
     }
 
     private void ReceivePeer(ulong sender, string json)
     {
         try
         {
-            var state = JsonSerializer.Deserialize<EventPeerState>(json);
-            if (state?.Player.Id == sender && state.EventId == state.Player.EventId && EventStateBounds.Valid(state.Player))
-                _peers[sender] = (state with { Player = state.Player with { LocalPage = true } }, _time);
+            if (_context == null) return;
+            var frame = JsonSerializer.Deserialize<BattleFrame>(json);
+            if (frame is not { Kind: "event-local" } || frame.Combat != _context.Key || frame.Parts > 22) return;
+            if (!_peerAssemblers.TryGetValue(sender, out var assembler))
+            {
+                if (_peerAssemblers.Count >= 4) return;
+                _peerAssemblers[sender] = assembler = new();
+            }
+            var bytes = assembler.Accept(frame, Time.GetTicksMsec());
+            if (bytes == null || bytes.Length > EventStateBounds.MaxPageBytes) return;
+            var page = JsonSerializer.Deserialize<EventPeerState>(bytes);
+            if (page?.Sequence != frame.Sequence) return;
+            AcceptPeerPage(sender, page);
         }
-        catch (JsonException) { }
+        catch (Exception error) { Warn("peer page", error); }
+    }
+
+    internal bool AcceptPeerPage(ulong sender, EventPeerState? state)
+    {
+        var run = RunManager.Instance.DebugOnlyGetState();
+        if (_context == null || run == null || !run.Players.Any(player => player.NetId == sender)
+            || state is not { Instance.Length: 32, Sequence: > 0 } || state.Context != _context.Key
+            || state.Map != _context.Map || state.Floor != _context.Floor
+            || state.Player != null && (state.Player.Id != sender || !EventStateBounds.Valid(state.Player))
+            || _peers.TryGetValue(sender, out var previous) && previous.State.Sequence >= state.Sequence) return false;
+        if (state.Player is { } player)
+            state = state with { Player = player with { Name = _session.PlayerName(sender), LocalPage = true, Stale = false } };
+        _peers[sender] = (state, _time);
+        _last = "";
+        return true;
     }
 
     private void Receive(string json)
@@ -163,11 +296,11 @@ public partial class SpectatorEvents : Node
         try
         {
             var frame = JsonSerializer.Deserialize<BattleFrame>(json);
-            if (frame?.Kind != "event-view" || frame.Parts > 22) return;
+            if (frame?.Kind != "event-view" || frame.Parts > 175) return;
             var bytes = _assembler.Accept(frame, Time.GetTicksMsec());
             if (bytes == null) return;
             var state = JsonSerializer.Deserialize<EventState>(bytes);
-            if (!EventStateBounds.Valid(state) || state!.Map != _session.Map?.Key || state.Floor < _session.Map.Floor || state.Key != frame.Combat
+            if (!EventStateBounds.Valid(state) || state!.Map != _session.Map?.Key || state.Floor != _session.Map.Floor || state.Key != frame.Combat
                 || _receivedKey == state.Key && frame.Sequence <= _receivedSequence) return;
             if (_receivedKey != state.Key) _showMap = false;
             _receivedKey = state.Key; _receivedSequence = frame.Sequence; _state = state;
@@ -178,38 +311,26 @@ public partial class SpectatorEvents : Node
 
     public override void _Input(InputEvent input)
     {
-        if (!_session.Watching || _state?.Players.Length is not > 0 || _combat.HasCombat || SpectatorDanmaku.IsEditing || _map.IsPaused) return;
+        if (!_session.Watching || _state?.Players.Length is not > 0 || _state.Map != _session.Map?.Key
+            || _state.Floor != _session.Map.Floor || _state.Room != _session.Map.Room || _state.InCombat
+            || !_map.OwnsRoomInput(_view) || _combat.HasCombat || SpectatorComment.IsEditing || _map.IsPaused) return;
         if (input.IsActionPressed(MegaCrit.Sts2.Core.ControllerInput.MegaInput.viewMap) && !input.IsEcho())
         { _showMap = !_showMap; GetViewport().SetInputAsHandled(); }
+        else if (_view.IsVisibleInTree() && _map.CurrentScreen == _view
+            && input is InputEventMouseButton { Pressed: true } mouse
+            && mouse.ButtonIndex is MouseButton.WheelUp or MouseButton.WheelDown && !_view.IsScrollingContent(mouse.Position))
+        {
+            _view.SwitchPlayer(mouse.ButtonIndex == MouseButton.WheelUp ? -1 : 1);
+            GetViewport().SetInputAsHandled();
+        }
     }
     public override void _ExitTree()
     {
+        if (_session == null) return;
         _session.BattleReceived -= Receive; _session.EventPeerReceived -= ReceivePeer;
+        _session.EventContextReceived -= ReceiveContext;
+        if (GodotObject.IsInstanceValid(_map) && GodotObject.IsInstanceValid(_view)) _map.UpdateRoomContent(_view, false);
+        if (GodotObject.IsInstanceValid(_view)) _view.QueueFree();
         if (Instance == this) Instance = null;
-    }
-}
-
-// 记录普通选择与共享投票，不改写同步器的结果。
-// Observe individual choices and shared votes without changing synchronization.
-[HarmonyPatch(typeof(EventSynchronizer), "BeginEvent")]
-internal static class SpectatorEventBegin
-{
-    private static void Prefix(EventSynchronizer __instance)
-    {
-        if (__instance == RunManager.Instance.EventSynchronizer) SpectatorEvents.Instance?.Begin();
-    }
-}
-[HarmonyPatch(typeof(EventSynchronizer), "ChooseOptionForEvent")]
-internal static class SpectatorEventChoice
-{
-    private static void Prefix(EventSynchronizer __instance, Player player, int optionIndex) => SpectatorEvents.Instance?.Chosen(__instance, player, optionIndex, false);
-}
-[HarmonyPatch(typeof(EventSynchronizer), "PlayerVotedForSharedOptionIndex")]
-internal static class SpectatorEventVote
-{
-    private static void Prefix(EventSynchronizer __instance, Player player, uint optionIndex, uint pageIndex)
-    {
-        if (pageIndex == (uint)AccessTools.Field(typeof(EventSynchronizer), "_pageIndex").GetValue(__instance)!)
-            SpectatorEvents.Instance?.Chosen(__instance, player, (int)optionIndex, true);
     }
 }

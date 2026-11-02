@@ -5,7 +5,6 @@ using MegaCrit.Sts2.Core.Multiplayer;
 using MegaCrit.Sts2.Core.Multiplayer.Game.PeerInput;
 using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Runs;
-using MegaCrit.Sts2.Core.Unlocks;
 using static sts2MultiplayerSpectatorModule.Scripts.SpectatorSession;
 
 namespace sts2MultiplayerSpectatorModule.Scripts;
@@ -32,7 +31,7 @@ public partial class SpectatorNativeInk : NMapDrawings
     {
         var service = new NetReplayGameService(SpectatorMap.DisplayPlayerId);
         _spectatorInput = new PeerInputSynchronizer(service);
-        var player = Player.CreateForNewRun<Defect>(UnlockState.all, SpectatorMap.DisplayPlayerId);
+        var player = SpectatorDisplayModels.Create(MegaCrit.Sts2.Core.Models.ModelDb.Character<Defect>(), SpectatorMap.DisplayPlayerId);
         Initialize(service, new DisplayPlayers(player), _spectatorInput);
         MouseFilter = MouseFilterEnum.Ignore;
     }

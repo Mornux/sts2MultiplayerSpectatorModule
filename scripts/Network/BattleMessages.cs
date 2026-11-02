@@ -35,7 +35,7 @@ internal sealed class BattleAssembler
     private readonly Dictionary<(string, string, long), Assembly> _pending = new();
     internal byte[]? Accept(BattleFrame frame, ulong tick)
     {
-        if (frame.Kind is not ("begin" or "event" or "end" or "ink" or "check" or "event-view" or "inventory") || frame.Combat is not { Length: 32 }
+        if (frame.Kind is not ("begin" or "event" or "end" or "ink" or "check" or "event-view" or "event-local" or "rest-view" or "treasure-view" or "inventory") || frame.Combat is not { Length: 32 }
             || frame.Sequence is < 0 or > 100000 || frame.Tick < 0 || frame.Parts is < 1 or > 175
             || frame.Part < 0 || frame.Part >= frame.Parts || frame.Data is not { Length: <= 16000 }) return null;
         byte[] bytes = Convert.FromBase64String(frame.Data);

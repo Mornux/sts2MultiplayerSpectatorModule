@@ -55,7 +55,7 @@ public partial class SpectatorSession : Node
     // Send battle data immediately through the authenticated spectator session.
     public void SendBattle(string data)
     {
-        if (IsHost) BroadcastViewers(new(2, "battle", "", data));
+        if (IsHost) BroadcastViewers(new(SpectatorWireProtocol.Version, "battle", "", data));
     }
 
     public override void _Process(double delta)
@@ -84,7 +84,7 @@ public partial class SpectatorSession : Node
             _requests.Clear();
             _mapAct = -1;
             _run = run;
-            _danmakuTimes.Clear();
+            _commentTimes.Clear();
         }
         foreach (var pair in _viewers.ToArray())
             if (!AllowSpectators || !CanContactViewer(pair.Key) || _time - pair.Value.Seen > 12)
@@ -92,8 +92,8 @@ public partial class SpectatorSession : Node
         if (HasViewer)
         {
             var snapshot = Snapshot();
-            BroadcastViewers(snapshot != null ? new(2, "map", "", snapshot, ++_sequence)
-                : new(2, "wait", "", L.Wire("status.wait_init")));
+            BroadcastViewers(snapshot != null ? new(SpectatorWireProtocol.Version, "map", "", snapshot, ++_sequence)
+                : new(SpectatorWireProtocol.Version, "wait", "", L.Wire("status.wait_init")));
         }
         if (!ReplayRunning) SyncNativeInk();
         if (IsHost && _time - _lastRoster >= 2)
@@ -115,7 +115,7 @@ public partial class SpectatorSession : Node
         if (_time - _heartbeat >= 3)
         {
             _heartbeat = _time;
-            Send(_host, new(2, "watch", _token, Name: _localName, Color: DrawingColor));
+            Send(_host, new(SpectatorWireProtocol.Version, "watch", _token, Name: _localName, Color: DrawingColor));
         }
     }
 

@@ -31,9 +31,15 @@ public partial class SpectatorPanel : CanvasLayer
         var events = new Events.SpectatorEvents();
         AddChild(events);
         events.Initialize(_session, _map, _combat);
-        var danmaku = new SpectatorDanmaku();
-        AddChild(danmaku);
-        danmaku.Initialize(_session);
+        var restSites = new SpectatorRestSites();
+        AddChild(restSites);
+        restSites.Initialize(_session, _map, _combat);
+        var treasure = new Treasure.SpectatorTreasure();
+        AddChild(treasure);
+        treasure.Initialize(_session, _map, _combat);
+        var comment = new SpectatorComment();
+        AddChild(comment);
+        comment.Initialize(_session);
         _map.ExitRequested += () => { _session.StopWatching(); _map.Hide(); };
         _session.FriendsChanged += RefreshList;
         _session.Updated += _map.Refresh;
@@ -49,5 +55,9 @@ public partial class SpectatorPanel : CanvasLayer
         RefreshManagement();
     }
 
-    public override void _ExitTree() => Instance = null;
+    public override void _ExitTree()
+    {
+        SpectatorUiLayers.CloseInspections();
+        if (Instance == this) Instance = null;
+    }
 }

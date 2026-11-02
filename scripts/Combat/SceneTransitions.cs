@@ -20,9 +20,11 @@ public partial class SpectatorCombat
 
     private async Task SwitchAfter(Task previous, Action change, int generation)
     {
-        await previous;
+        try { await previous; }
+        catch (Exception error) { GD.PushWarning("[Spectator] Previous scene transition: " + error.Message); }
         if (generation != _generation || !_session.Watching) return;
         if (SaveManager.Instance.PrefsSave.FastMode == FastModeType.Instant) { change(); return; }
+        bool changed = false, changeCompleted = false;
         try
         {
             if (_sceneTransition == null)
@@ -40,13 +42,14 @@ public partial class SpectatorCombat
             _sceneTransition.Show();
             _sceneTransition.MouseFilter = Control.MouseFilterEnum.Stop;
             await _sceneTransition.RoomFadeOut();
-            if (generation == _generation && _session.Watching) change();
+            if (generation == _generation && _session.Watching) { changed = true; change(); changeCompleted = true; }
             await _sceneTransition.RoomFadeIn();
         }
         catch (Exception error)
         {
             GD.PushWarning("[Spectator] Scene transition: " + error.Message);
-            if (generation == _generation && _session.Watching) change();
+            if (changed && !changeCompleted) throw;
+            if (!changed && generation == _generation && _session.Watching) change();
         }
         finally
         {

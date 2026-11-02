@@ -25,8 +25,8 @@ public partial class SpectatorCombat
         try
         {
             var frame = JsonSerializer.Deserialize<BattleFrame>(json);
-            if (frame?.Kind is "event-view" or "inventory") return;
-            if (frame == null || _finished.Contains(frame.Combat)) return;
+            if (frame == null || frame.Kind is not ("begin" or "event" or "end" or "ink" or "check")
+                || _finished.Contains(frame.Combat)) return;
             if (frame.Combat == _waitingBattle)
             {
                 if ((_nextBattleBytes += System.Text.Encoding.UTF8.GetByteCount(json)) > BattleAssembler.MaxBytes * 2)
@@ -37,7 +37,7 @@ public partial class SpectatorCombat
             var bytes = _assembler.Accept(frame, Time.GetTicksMsec());
             if (bytes == null) return;
             if (frame.Kind == "ink")
-            { if (frame.Combat == _session.Map?.Key) ReceiveInk(bytes); return; }
+            { if (frame.Combat == _session.Map?.Key) _mapSync.ReceiveInk(bytes); return; }
             if (frame.Kind == "begin")
             {
                 if (_combat == frame.Combat) return;

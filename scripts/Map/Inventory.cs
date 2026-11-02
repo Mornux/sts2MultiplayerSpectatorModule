@@ -40,7 +40,7 @@ public partial class SpectatorMap
             for (int i = 0; i < count; i++)
             {
                 var player = reader.Read<SerializablePlayer>();
-                if (_session.Map?.Players?.Any(item => item.Id == player.NetId) != true
+                if (_session.Map?.Players.Any(item => item.Id == player.NetId) != true
                     || player.Deck.Count > 1000 || player.Relics.Count > 512 || player.Potions.Count > 32) return;
                 received.Add(player.NetId, player);
             }
@@ -71,7 +71,7 @@ public partial class SpectatorMap
             if (_playerRows.TryGetValue(id, out var selected)) selected.Root.GetNode<MegaCrit.Sts2.Core.Nodes.Combat.NSelectionReticle>("SelectionReticle").OnSelect();
             _inspection.GetNode<MegaCrit.Sts2.Core.Nodes.CommonUi.NBackButton>("%BackButton").Enable();
             _inspection.GetNode<MegaCrit.Sts2.addons.mega_text.MegaRichTextLabel>("%PlayerNameLabel").Text =
-                (_session.Map?.Players?.FirstOrDefault(item => item.Id == id)?.Name ?? "").Replace("[", "[lb]");
+                _session.PlayerName(id).Replace("[", "[lb]");
             ActiveScreenContext.Instance.Update();
         }
         catch (Exception error) { GD.PushWarning("[Spectator] Inspect player: " + error.Message); CloseInventory(); }
@@ -106,13 +106,7 @@ internal static class SpectatorInventoryBack
 [HarmonyPatch(typeof(NMultiplayerPlayerExpandedState), nameof(NMultiplayerPlayerExpandedState._Ready))]
 internal static class SpectatorInventoryPlatform
 {
-    private static readonly MegaCrit.Sts2.Core.Multiplayer.Game.INetGameService DisplayService =
-        new MegaCrit.Sts2.Core.Multiplayer.NetSingleplayerGameService();
-    private static MegaCrit.Sts2.Core.Multiplayer.Game.INetGameService Service(MegaCrit.Sts2.Core.Runs.RunManager manager) =>
-        manager.NetService ?? DisplayService;
     private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>
-        HarmonyLib.Transpilers.MethodReplacer(instructions,
-            AccessTools.PropertyGetter(typeof(MegaCrit.Sts2.Core.Runs.RunManager), "NetService"),
-            AccessTools.Method(typeof(SpectatorInventoryPlatform), nameof(Service)));
+        SpectatorDisplayService.ReplaceReads(instructions);
 }
 

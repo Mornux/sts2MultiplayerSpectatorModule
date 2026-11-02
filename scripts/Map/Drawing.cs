@@ -4,7 +4,6 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Saves.MapDrawing;
-using MegaCrit.Sts2.Core.Unlocks;
 using static sts2MultiplayerSpectatorModule.Scripts.SpectatorSession;
 
 namespace sts2MultiplayerSpectatorModule.Scripts;
@@ -21,7 +20,7 @@ public partial class SpectatorMap
     private long _strokeRevision;
     private ulong _lastStrokeSend;
     private ulong _lastSound;
-    private SpectatorCombat.PlayerInk[] _playerInk = Array.Empty<SpectatorCombat.PlayerInk>();
+    private PlayerInk[] _playerInk = Array.Empty<PlayerInk>();
     private int _playerInkVersion, _shownPlayerInkVersion;
     private string? _playerInkKey;
     internal const ulong DisplayPlayerId = ulong.MaxValue;
@@ -29,7 +28,7 @@ public partial class SpectatorMap
 
     // 玩家原版绘画按作者独立渲染，橡皮仍使用原版遮罩，不擦除其他作者。
     // Render native participant ink per author, preserving the native eraser mask.
-    internal void SetPlayerInk(SpectatorCombat.PlayerInk[] ink)
+    internal void SetPlayerInk(PlayerInk[] ink)
     {
         _playerInk = ink;
         _playerInkKey = _session.Map?.Key;
@@ -39,7 +38,7 @@ public partial class SpectatorMap
 
     internal Color? InkColor(ulong playerId) => playerId == DisplayPlayerId ? new Color(_session.DrawingColor)
         : _session.Roster.ContainsKey(playerId) ? new Color(_session.AuthorColor(playerId))
-        : Snapshot?.Players?.FirstOrDefault(player => player.Id == playerId) is { } player ? new Color(player.Color)
+        : Snapshot?.Players.FirstOrDefault(player => player.Id == playerId) is { } player ? new Color(player.Color)
         : _playerInk.FirstOrDefault(line => line.PlayerId == playerId) is { } ink ? new Color(ink.Color) : null;
 
     // 保留原版绘画输入、光标和渲染，只将画线消息转入独立观战通道。
@@ -110,14 +109,14 @@ public partial class SpectatorMap
             }
             return line;
         }
-        player.lines.AddRange(_shownInk.Where(sketch => sketch.Author == 0 || sketch.Author == _session.SelfViewerId)
+        player.lines.AddRange(_shownInk.Where(sketch => sketch.Author == _session.SelfViewerId)
             .Select(sketch => ConvertLine(sketch.Points, sketch.Eraser)));
         var data = new SerializableMapDrawings { drawings = new() { player } };
-        foreach (var author in _shownInk.Where(line => line.Author != 0 && line.Author != _session.SelfViewerId).GroupBy(line => line.Author))
+        foreach (var author in _shownInk.Where(line => line.Author != _session.SelfViewerId).GroupBy(line => line.Author))
         {
             if (!_displayRun.Players.Any(model => model.NetId == author.Key))
             {
-                var model = MegaCrit.Sts2.Core.Entities.Players.Player.CreateForNewRun<Defect>(UnlockState.all, author.Key);
+                var model = SpectatorDisplayModels.Create(MegaCrit.Sts2.Core.Models.ModelDb.Character<Defect>(), author.Key);
                 Set(model, "RunState", _displayRun);
                 ((List<MegaCrit.Sts2.Core.Entities.Players.Player>)_displayRun.Players).Add(model);
             }
@@ -130,7 +129,7 @@ public partial class SpectatorMap
                 if (author.Key == player.playerId) continue;
                 if (!_displayRun.Players.Any(model => model.NetId == author.Key))
                 {
-                    var model = MegaCrit.Sts2.Core.Entities.Players.Player.CreateForNewRun<Defect>(UnlockState.all, author.Key);
+                    var model = SpectatorDisplayModels.Create(MegaCrit.Sts2.Core.Models.ModelDb.Character<Defect>(), author.Key);
                     Set(model, "RunState", _displayRun);
                     ((List<MegaCrit.Sts2.Core.Entities.Players.Player>)_displayRun.Players).Add(model);
                 }

@@ -16,9 +16,8 @@ public partial class SpectatorSession
     // 地图和画线快照不创建参战玩家；战斗另行传输只读回放。
     // Map and ink snapshots create no participant; combat uses a separate read-only replay stream.
     public sealed record MapNode(int Col, int Row, int Type, float X, float Y, int[] Children, bool Current, bool Visited);
-    public sealed record MapSnapshot(string Key, int Act, int Floor, string Room, string Paper, MapNode[] Nodes, long RunTime = 0,
-        string ActId = "", string BossId = "", string AncientId = "", string SecondBossId = "", string BaseRoom = "",
-        MapPlayer[]? Players = null);
+    public sealed record MapSnapshot(string Key, int Act, int Floor, string Room, string Paper, MapNode[] Nodes, MapPlayer[] Players,
+        long RunTime = 0, string ActId = "", string BossId = "", string AncientId = "", string SecondBossId = "", string BaseRoom = "");
     public sealed record MapPlayer(ulong Id, string Name, string CharacterId, int Hp, int MaxHp, string Color);
 
     // 从原生地图读取实际位置和连线，观众只显示地图。
@@ -51,10 +50,10 @@ public partial class SpectatorSession
                 run.CurrentMapCoord == point.coord, run.VisitedMapCoords.Contains(point.coord));
         }).ToArray();
         return JsonSerializer.Serialize(new MapSnapshot(_mapKey, _mapAct, run.TotalFloor,
-            run.CurrentRoom?.RoomType.ToString() ?? "Map", run.Act.MapMidBgPath, nodes, RunManager.Instance.RunTime,
+            run.CurrentRoom?.RoomType.ToString() ?? "Map", run.Act.MapMidBgPath, nodes,
+            CapturePlayers(run, RunManager.Instance.NetService.Platform), RunManager.Instance.RunTime,
             run.Act.Id.ToString(), rooms.BossId.ToString(), rooms.AncientId?.ToString() ?? "",
-            rooms.SecondBossId?.ToString() ?? "", run.BaseRoom?.RoomType.ToString() ?? "",
-            CapturePlayers(run, RunManager.Instance.NetService.Platform)));
+            rooms.SecondBossId?.ToString() ?? "", run.BaseRoom?.RoomType.ToString() ?? ""));
     }
 
     // 名单只传输展示数据，不给观众增加参战玩家身份。
@@ -71,7 +70,7 @@ public partial class SpectatorSession
         && map.ActId is { Length: <= 128 } && map.BossId is { Length: <= 128 }
         && map.AncientId is { Length: <= 128 } && map.SecondBossId is { Length: <= 128 }
         && map.BaseRoom is { Length: <= 128 }
-        && (map.Players == null || map.Players is { Length: <= 4 }
+        && (map.Players is { Length: <= 4 }
             && map.Players.All(player => player != null && player.Id != ulong.MaxValue
                 && player.Name is { Length: <= 40 } && player.Name.All(ch => !char.IsControl(ch))
                 && player.CharacterId is { Length: > 0 and <= 128 } && ValidColor(player.Color)

@@ -1,9 +1,7 @@
 using Godot;
-using HarmonyLib;
 using MegaCrit.Sts2.addons.mega_text;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
-using MegaCrit.Sts2.Core.Nodes.HoverTips;
 using MegaCrit.Sts2.Core.Nodes.Screens;
 using MegaCrit.Sts2.Core.Nodes.Screens.MainMenu;
 using MegaCrit.Sts2.Core.Nodes.Screens.PauseMenu;
@@ -21,7 +19,7 @@ public partial class SpectatorMap
     private NRunSubmenuStack? _menuStack;
     private NPauseMenu? _pauseMenu;
     private Control _hoverTips = null!;
-    private Control? _modalOverlay;
+    private NModalContainer? _modalContainer;
     private bool _changingPause;
 
     // 直接使用原版暂停菜单和设置菜单栈，观战退出按钮放在最底下。
@@ -49,26 +47,14 @@ public partial class SpectatorMap
         _pause.ProcessMode = ProcessModeEnum.Disabled;
     }
 
-    internal void BindPauseMenu(NPauseMenu menu)
+    internal void ConfigurePauseMenu(NPauseMenu menu)
     {
-        Call(menu, "ConnectSignals");
         var buttons = menu.GetNode<Control>("%ButtonContainer");
-        Set(menu, "_buttonContainer", buttons);
-        foreach (var binding in new[] { ("_resumeButton", "Resume"), ("_settingsButton", "Settings"),
-            ("_compendiumButton", "Compendium"), ("_giveUpButton", "GiveUp"),
-            ("_disconnectButton", "Disconnect"), ("_saveAndQuitButton", "SaveAndQuit") })
-            Set(menu, binding.Item1, buttons.GetNode<NPauseMenuButton>(binding.Item2));
-        Set(menu, "_backButton", menu.GetNode<NBackButton>("%BackButton"));
-        Set(menu, "_pausedLabel", menu.GetNode<MegaLabel>("%PausedText/Label"));
+        // Native Ready has already bound labels, signals and navigation.
         Set(menu, "_runState", _displayRun);
-        Call(menu, "RefreshLabels");
-        buttons.GetNode<NButton>("Resume").Connect(NClickableControl.SignalName.Released,
-            Callable.From<NButton>(_ => SetPaused(false)));
-        foreach (string name in new[] { "Settings", "Compendium" })
-            buttons.GetNode<NButton>(name).Connect(NClickableControl.SignalName.Released,
-                Callable.From<NButton>(button => Call(menu, "On" + name + "ButtonPressed", button)));
         foreach (string name in new[] { "GiveUp", "Disconnect", "SaveAndQuit" })
         { var button = buttons.GetNode<NButton>(name); button.Hide(); button.Disable(); }
+        if (buttons.HasNode("ExitSpectator")) return;
         var exit = ResourceLoader.Load<PackedScene>("res://scenes/pause_menu/pause_menu_button.tscn").Instantiate<NPauseMenuButton>();
         exit.Name = "ExitSpectator";
         buttons.AddChild(exit);
@@ -90,7 +76,20 @@ public partial class SpectatorMap
         {
             StopDrawing();
             ClearHoverTips();
-            if (!paused && _modalOverlay != null) NModalContainer.Instance?.Clear();
+            if (!paused && _modalContainer != null)
+            {
+                var modal = _modalContainer;
+                try
+                {
+                    if (GodotObject.IsInstanceValid(modal)) modal.Clear();
+                    _modalContainer = null;
+                }
+                catch (Exception error)
+                {
+                    // Keep the modal for a retry, while still releasing the menu and map input below.
+                    GD.PushWarning("[Spectator] Close settings modal: " + error.Message);
+                }
+            }
             _pause.ProcessMode = paused ? ProcessModeEnum.Always : ProcessModeEnum.Disabled;
             _pause.Visible = paused;
             if (_native != null)
@@ -123,30 +122,16 @@ public partial class SpectatorMap
         ExitRequested?.Invoke();
     }).CallDeferred();
 
-    internal void ShowHoverTip(NHoverTipSet tip) => tip.Reparent(_hoverTips, true);
-
     // 设置页面的原版确认弹窗也显示在观战界面之上，关闭仍交给原版处理。
     // Keep native settings confirmations above the spectator UI and retain native dismissal.
-    internal void ShowModal(Node modal)
+    internal void ShowModal(NModalContainer container)
     {
         if (_pause?.Visible != true) return;
-        _modalOverlay = new Control { Name = "SpectatorModal" };
-        _hoverTips.AddChild(_modalOverlay);
-        _modalOverlay.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        var backstop = new ColorRect { Color = new Color(0, 0, 0, 0.85f) };
-        _modalOverlay.AddChild(backstop);
-        backstop.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        modal.Reparent(_modalOverlay, true);
-    }
-    internal void DismissModal()
-    {
-        _modalOverlay?.QueueFree();
-        _modalOverlay = null;
+        _modalContainer = container;
+        SpectatorUiLayers.Raise(container);
     }
     private void ClearHoverTips()
     {
-        if (!GodotObject.IsInstanceValid(_hoverTips)) return;
-        foreach (var tip in _hoverTips.GetChildren().OfType<NHoverTipSet>().ToArray())
-            if (AccessTools.Field(typeof(NHoverTipSet), "_owner").GetValue(tip) is Control owner) NHoverTipSet.Remove(owner);
+        SpectatorCombat.ClearOwnedHoverTips(this);
     }
 }

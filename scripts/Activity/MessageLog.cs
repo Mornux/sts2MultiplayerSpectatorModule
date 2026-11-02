@@ -2,9 +2,9 @@ using Godot;
 
 namespace sts2MultiplayerSpectatorModule.Scripts;
 
-// 左下角保留最近一百条消息，平时浮起淡出，输入弹幕时显示可滚动记录。
+// 左下角保留最近一百条消息，平时浮起淡出，输入评论时显示可滚动记录。
 // Keep one hundred recent messages; float and fade notices, or show scrollable history while typing.
-public partial class SpectatorDanmaku
+public partial class SpectatorComment
 {
     private readonly Queue<string> _history = new();
     private readonly Queue<(RichTextLabel Label, double Time)> _notices = new();
@@ -34,7 +34,7 @@ public partial class SpectatorDanmaku
         _archive.Hide();
         _logContext = _session.MessageLogContext;
         _session.ActivityReceived += ReceiveActivity;
-        _session.DanmakuReceived += RecordChat;
+        _session.CommentReceived += RecordComment;
     }
 
     private RichTextLabel LogLabel(bool fit = false)
@@ -52,15 +52,15 @@ public partial class SpectatorDanmaku
     private void ReceiveActivity(ActivityNotice notice) => AppendLog(L.T(
         notice.Action switch
         {
-            "choice" or "选择了" => "activity.choice",
+            "choice" => "activity.choice",
             "gold" => "activity.gold",
             "upgrade" => "activity.upgrade",
             "enchant" => "activity.enchant",
             _ => "activity.obtain"
         }, EscapeLog(notice.Name),
         "[color=#" + notice.Color + "]" + EscapeLog(notice.Text) + "[/color]"));
-    private void RecordChat(SpectatorSession.Danmaku message) => AppendMessage(
-        "[color=#" + message.Color + "]" + EscapeLog(message.Name) + "[/color]：" + EscapeLog(message.Text), transient: !DanmakuSettings.Scrolling);
+    private void RecordComment(SpectatorSession.Comment message) => AppendMessage(
+        "[color=#" + message.Color + "]" + EscapeLog(message.Name) + "[/color]：" + EscapeLog(message.Text), transient: !CommentSettings.Scrolling);
 
     private void AppendLog(string text) => AppendMessage(text, true);
 
@@ -91,7 +91,7 @@ public partial class SpectatorDanmaku
         _transient.Position = new Vector2(0, Math.Max(0, _log.Size.Y - _transient.GetCombinedMinimumSize().Y) - Math.Min(newestAge * 14, 28));
         _archive.Visible = IsEditing;
         _transient.Visible = !IsEditing;
-        _log.Visible = _session.CanSendDanmaku;
+        _log.Visible = _session.CanSendComment;
         if (IsEditing && !_logWasEditing)
         {
             _archive.Text = string.Join('\n', _history);
@@ -125,7 +125,7 @@ public partial class SpectatorDanmaku
     private void DisposeLog()
     {
         _session.ActivityReceived -= ReceiveActivity;
-        _session.DanmakuReceived -= RecordChat;
+        _session.CommentReceived -= RecordComment;
         if (ReferenceEquals(ActivityCapture.Session, _session)) ActivityCapture.Session = null;
     }
 }

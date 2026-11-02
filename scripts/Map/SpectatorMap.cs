@@ -22,6 +22,7 @@ public partial class SpectatorMap : Control
     private RunState? _displayRun;
     private PeerInputSynchronizer? _input;
     private Control? _eventContent;
+    private readonly Dictionary<Control, (bool Visible, int Priority)> _roomViews = new();
     internal bool IsPaused => _pause?.Visible == true;
     internal static SpectatorMap? Active { get; private set; }
     internal MapSnapshot? Snapshot => _session.Map;
@@ -42,6 +43,19 @@ public partial class SpectatorMap : Control
         }
         MegaCrit.Sts2.Core.Nodes.Screens.ScreenContext.ActiveScreenContext.Instance.Update();
     }
+
+    // Custom event providers can replace a native room presentation without fighting it every frame.
+    internal void UpdateRoomContent(Control view, bool visible, int priority = 0, bool available = false)
+    {
+        if (available || visible) _roomViews[view] = (visible, priority);
+        else _roomViews.Remove(view);
+        foreach (var invalid in _roomViews.Keys.Where(control => !GodotObject.IsInstanceValid(control)).ToArray()) _roomViews.Remove(invalid);
+        var selected = _roomViews.OrderByDescending(pair => pair.Value.Priority).FirstOrDefault();
+        SetEventContent(selected.Key != null && selected.Value.Visible ? selected.Key : null);
+        if (_eventContent != view && GodotObject.IsInstanceValid(view)) view.Hide();
+    }
+
+    internal bool OwnsRoomInput(Control view) => _roomViews.OrderByDescending(pair => pair.Value.Priority).FirstOrDefault().Key == view;
     private Label _status = null!;
     private string? _key, _failedKey;
     private MapCoord? _current;
@@ -125,6 +139,8 @@ public partial class SpectatorMap : Control
             {
                 if (Active == this) Active = null;
                 SetPaused(false);
+                if (!_session.Watching) SpectatorUiLayers.CloseInspections();
+                SpectatorUiLayers.RestoreAll();
                 ClearHoverTips();
                 _topBar?.GetNode<NTopBarPauseButton>("%PauseButton").Disable();
                 _native?.GetNode<NBackButton>("Back").Disable();
@@ -164,7 +180,7 @@ public partial class SpectatorMap : Control
 
     public override void _Input(InputEvent input)
     {
-        if (SpectatorDanmaku.IsEditing) return;
+        if (SpectatorComment.IsEditing) return;
         if (!IsVisibleInTree()) return;
         if (_inspection != null)
         {
@@ -217,6 +233,8 @@ public partial class SpectatorMap : Control
     {
         _session.BattleReceived -= ReceiveInventory;
         SetPaused(false);
+        SpectatorUiLayers.CloseInspections();
+        SpectatorUiLayers.RestoreAll();
         if (Active == this) Active = null;
         ClearHoverTips();
         UnblockHotkeys();

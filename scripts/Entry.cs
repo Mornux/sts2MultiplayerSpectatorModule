@@ -16,7 +16,14 @@ public static partial class Entry
     {
         L.Language = () => LocManager.Instance?.Language ?? "eng";
         ScriptManagerBridge.LookupScriptsInAssembly(typeof(Entry).Assembly);
-        new Harmony("mornux.sts2.spectator").PatchAll(typeof(Entry).Assembly);
+        var harmony = new Harmony("mornux.sts2.spectator");
+        try { harmony.PatchAll(typeof(Entry).Assembly); }
+        catch
+        {
+            // A failed install must not leave half of the read-only guards active.
+            harmony.UnpatchAll(harmony.Id);
+            throw;
+        }
         if (NGame.Instance is { } game && game.IsNodeReady())
             game.CallDeferred(Node.MethodName.AddChild, new SpectatorPanel());
     }

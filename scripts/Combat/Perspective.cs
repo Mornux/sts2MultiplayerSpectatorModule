@@ -5,12 +5,15 @@ using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.UI;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Multiplayer;
+using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Cards;
+using MegaCrit.Sts2.Core.Nodes.HoverTips;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.Nodes.Screens.ScreenContext;
+using MegaCrit.Sts2.Core.Nodes.Screens.Capstones;
 using MegaCrit.Sts2.Core.Runs;
 
 namespace sts2MultiplayerSpectatorModule.Scripts;
@@ -35,12 +38,14 @@ public partial class SpectatorCombat
             _viewIndex = _pendingView;
             ulong playerId = _state.Players[_viewIndex].NetId;
             LocalContext.NetId = playerId;
+            _environment?.TrackIdentity();
             ((NetReplayGameService)RunManager.Instance.NetService).NetId = playerId;
             var old = room.Ui;
             string path = old.SceneFilePath;
             var parent = old.GetParent();
             int uiIndex = old.GetIndex();
             var ui = ResourceLoader.Load<PackedScene>(path).Instantiate<NCombatUi>();
+            ClearOwnedHoverTips(old);
             old.Deactivate();
             parent.RemoveChild(old);
             old.QueueFree();
@@ -58,6 +63,7 @@ public partial class SpectatorCombat
             bar.MouseFilter = oldBar.MouseFilter;
             var barParent = oldBar.GetParent();
             int barIndex = oldBar.GetIndex();
+            ClearOwnedHoverTips(oldBar);
             barParent.RemoveChild(oldBar);
             oldBar.QueueFree();
             SpectatorMap.Set(_runNode.GlobalUi, "TopBar", bar);
@@ -65,6 +71,7 @@ public partial class SpectatorCombat
             barParent.MoveChild(bar, barIndex);
             bar.Initialize(_state);
             var relics = _runNode.GlobalUi.RelicInventory;
+            ClearOwnedHoverTips(relics);
             SpectatorMap.Call(relics, "DisconnectPlayerEvents");
             ((System.Collections.IList)AccessTools.Field(relics.GetType(), "_relicNodes").GetValue(relics)!).Clear();
             foreach (var child in relics.GetChildren()) { relics.RemoveChild(child); child.QueueFree(); }
@@ -91,19 +98,29 @@ public partial class SpectatorCombat
         catch (Exception error) { Fail(L.T("combat.switch_failed") + error.Message); }
     }
 
+    // Lift native windows before entering the tree. Reparenting a live menu stack would
+    // unsubscribe its children in ExitTree without running their Ready again.
+    internal static void PrepareRunUi(NRun run)
+    {
+        if (run.IsInsideTree()) throw new InvalidOperationException("Prepare replay UI before attaching the run.");
+        var capstone = run.GetNode<NCapstoneContainer>("%CapstoneScreenContainer");
+        if (capstone.GetParent() is CanvasLayer) return;
+        var layer = new CanvasLayer { Name = "SpectatorCapstones", Layer = 150 };
+        capstone.GetParent().AddChild(layer);
+        layer.Owner = capstone.Owner;
+        capstone.Reparent(layer, false);
+    }
+
+    internal static void ClearOwnedHoverTips(Node root)
+    {
+        foreach (var control in Descendants(root).OfType<Control>()) NHoverTipSet.Remove(control);
+    }
+
     private void ConfigureCombatUi()
     {
         if (_runNode?.CombatRoom is not { } room) return;
         room.Ui.EndTurnButton.Disable();
         var global = _runNode.GlobalUi;
-        // 原版窗口提升到观战地图之上，避免已打开却被覆盖。
-        // Place native capstone windows above the spectator map overlay.
-        if (global.CapstoneContainer.GetParent() is not CanvasLayer)
-        {
-            var layer = new CanvasLayer { Layer = 150 };
-            _runNode.AddChild(layer);
-            global.CapstoneContainer.Reparent(layer, false);
-        }
         global.RelicInventory.Hide();
         global.TopBar.Gold.Hide();
         global.TopBar.PotionContainer.Hide();
@@ -169,7 +186,7 @@ public partial class SpectatorCombat
 
     public override void _Input(InputEvent input)
     {
-        if (SpectatorDanmaku.IsEditing) return;
+        if (SpectatorComment.IsEditing) return;
         if (!HasCombat || _loading || _map.Visible || _state == null) return;
         if (input is InputEventMouseButton { Pressed: true } mouse && mouse.ButtonIndex is MouseButton.WheelUp or MouseButton.WheelDown)
         {

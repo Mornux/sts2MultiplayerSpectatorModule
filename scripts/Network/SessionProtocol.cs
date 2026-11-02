@@ -15,11 +15,11 @@ public partial class SpectatorSession
     {
         if (HandleViewerData(sender, packet)) return;
         if (HandleEventPeer(sender, packet)) return;
-        if (HandleDanmaku(sender, packet)) return;
+        if (HandleComment(sender, packet)) return;
         if (HandleActivity(sender, packet)) return;
         if (packet.Kind == "query")
         {
-            Send(sender, new(2, "offer", packet.Token, !IsHost ? L.Wire("status.not_host")
+            Send(sender, new(SpectatorWireProtocol.Version, "offer", packet.Token, !IsHost ? L.Wire("status.not_host")
                 : IsLocalHost ? L.Wire("status.use_local") : !AllowSpectators ? L.Wire("status.disabled")
                 : CanEnter() ? L.Wire("status.available") : L.Wire("status.wait_map")));
         }
@@ -31,31 +31,31 @@ public partial class SpectatorSession
         else if (packet.Kind == "watch")
         {
             if (!IsHost || !CanContactViewer(sender))
-                Send(sender, new(2, "end", packet.Token, L.Wire("status.rejected")));
+                Send(sender, new(SpectatorWireProtocol.Version, "end", packet.Token, L.Wire("status.rejected")));
             else if (_viewers.TryGetValue(sender, out var active))
             {
-                if (active.Token != packet.Token) { Send(sender, new(2, "end", packet.Token, L.Wire("status.rejected"))); return; }
+                if (active.Token != packet.Token) { Send(sender, new(SpectatorWireProtocol.Version, "end", packet.Token, L.Wire("status.rejected"))); return; }
                 active.Seen = _time; UpdateViewerColor(sender, packet.Color);
             }
             else if (_viewers.Count >= MaxViewers)
-                Send(sender, new(2, "end", packet.Token, L.Wire("status.full")));
+                Send(sender, new(SpectatorWireProtocol.Version, "end", packet.Token, L.Wire("status.full")));
             else if (AwaitApproval(sender, packet)) return;
             else if (!CanEnter())
-                Send(sender, new(2, "wait", packet.Token, L.Wire("status.wait_ready")));
+                Send(sender, new(SpectatorWireProtocol.Version, "wait", packet.Token, L.Wire("status.wait_ready")));
             else
             {
                 // 快照生成成功后才接纳观众，避免异常留下一个无法使用的观众名额。
                 // Admit only after creating a snapshot, so failures cannot leave a stuck viewer slot.
                 string? snapshot = Snapshot();
                 if (snapshot == null)
-                { Send(sender, new(2, "wait", packet.Token, L.Wire("status.wait_init"))); return; }
+                { Send(sender, new(SpectatorWireProtocol.Version, "wait", packet.Token, L.Wire("status.wait_init"))); return; }
                 _run = RunManager.Instance.DebugOnlyGetState();
                 _requests.Remove(sender);
                 _viewers.Add(sender, new ViewerConnection(packet.Token, CleanName(SpectatorLocal.IsLocal(sender) ? packet.Name : PlayerName(sender)),
                     ValidColor(packet.Color) ? packet.Color.ToLowerInvariant() : "dca747", _time));
-                Send(sender, new(2, "map", packet.Token, snapshot, ++_sequence));
+                Send(sender, new(SpectatorWireProtocol.Version, "map", packet.Token, snapshot, ++_sequence));
                 PublishRoster();
-                foreach (var line in _ink) Send(sender, new(2, "viewer-ink", packet.Token, JsonSerializer.Serialize(line)));
+                foreach (var line in _ink) Send(sender, new(SpectatorWireProtocol.Version, "viewer-ink", packet.Token, JsonSerializer.Serialize(line)));
 
             }
         }

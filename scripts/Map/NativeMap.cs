@@ -13,7 +13,6 @@ using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves.Runs;
-using MegaCrit.Sts2.Core.Unlocks;
 using static sts2MultiplayerSpectatorModule.Scripts.SpectatorSession;
 
 namespace sts2MultiplayerSpectatorModule.Scripts;
@@ -40,7 +39,7 @@ public partial class SpectatorMap
                 SecondBossId = snapshot.SecondBossId.Length == 0 ? null : ModelId.Deserialize(snapshot.SecondBossId)
             }
         });
-        var player = Player.CreateForNewRun<Defect>(UnlockState.all, DisplayPlayerId);
+        var player = SpectatorDisplayModels.Create(ModelDb.Character<Defect>(), DisplayPlayerId);
         _displayRun = RunState.CreateForTest(new[] { player }, seed: "SPECTATOR");
         Set(_displayRun, "Acts", new[] { act });
         _displayRun.Map = new DisplayActMap(snapshot);

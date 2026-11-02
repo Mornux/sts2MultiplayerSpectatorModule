@@ -15,9 +15,9 @@ namespace sts2MultiplayerSpectatorModule.Scripts;
 [HarmonyPatch(typeof(NTopBarMapButton), "OnRelease")]
 internal static class SpectatorBattleMap
 {
-    private static bool Prefix()
+    private static bool Prefix(NTopBarMapButton __instance)
     {
-        if (!SpectatorCombat.Watching) return true;
+        if (!SpectatorCombat.Owns(__instance)) return true;
         SpectatorCombat.Instance!.ToggleMap();
         return false;
     }
@@ -28,7 +28,12 @@ internal static class SpectatorBattleMenu
 {
     private static bool Prefix(NTopBarPauseButton __instance)
     {
-        if (!SpectatorCombat.Watching || Find(__instance) != null) return true;
+        if (Find(__instance) is { } map)
+        {
+            map.TogglePause();
+            return false;
+        }
+        if (!SpectatorCombat.Owns(__instance)) return true;
         SpectatorCombat.Instance!.OpenMenu();
         return false;
     }
@@ -50,16 +55,16 @@ internal static class SpectatorBattleDisabledEndTurn
 {
     private static void Postfix(NEndTurnButton __instance)
     {
-        if (SpectatorCombat.Watching) __instance.Disable();
+        if (SpectatorCombat.Owns(__instance)) __instance.Disable();
     }
 }
 
 [HarmonyPatch(typeof(NRunTimer), "OnTimerTimeout")]
 internal static class SpectatorBattleTimer
 {
-    private static bool Prefix()
+    private static bool Prefix(NRunTimer __instance)
     {
-        if (!SpectatorCombat.Watching) return true;
+        if (!SpectatorCombat.Owns(__instance)) return true;
         SpectatorCombat.Instance!.UpdateTimer();
         return false;
     }

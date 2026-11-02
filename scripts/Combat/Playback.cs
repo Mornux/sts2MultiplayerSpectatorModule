@@ -28,14 +28,7 @@ public partial class SpectatorCombat
         {
             if (RunManager.Instance.IsInProgress) throw new InvalidOperationException(L.T("combat.own_run"));
             _session.ReplayRunning = true;
-            var root = NGame.Instance!.RootSceneContainer;
-            _previousScene = root.CurrentScene ?? throw new InvalidOperationException(L.T("combat.no_menu"));
-            _previousButtons = Descendants(_previousScene).OfType<NButton>().Where(button => button.IsEnabled).ToArray();
-            _previousScene.Hide();
-            _previousScene.ProcessMode = ProcessModeEnum.Disabled;
-            _previousProgress = SaveManager.Instance.Progress;
-            SaveManager.Instance.Progress = ProgressState.FromSerializable(_previousProgress.ToSerializable(), new DeserializationContext());
-            SaveManager.Instance.Progress.EnableFtues = false;
+            _environment = ReplayEnvironment.Enter();
             _map.SetCombatAvailable(false);
             _map.Show();
             _session.ReportStatus(L.T("combat.loading"));
@@ -44,6 +37,7 @@ public partial class SpectatorCombat
             _pendingView = _viewIndex;
             var manager = RunManager.Instance;
             manager.SetUpReplay(_state, replay, _state.Players[_viewIndex].NetId);
+            _environment.TrackIdentity();
             SpectatorMap.Set(manager, "ShouldSave", false);
             manager.CombatReplayWriter.IsEnabled = false;
             manager.CombatStateSynchronizer.IsDisabled = true;
@@ -53,8 +47,8 @@ public partial class SpectatorCombat
             if (generation != _generation) return;
             manager.Launch();
             _runNode = NRun.Create(_state);
-            SpectatorMap.Set(root, "_currentScene", _runNode);
-            root.AddChild(_runNode);
+            PrepareRunUi(_runNode);
+            _environment.Attach(_runNode);
             await manager.GenerateMap();
             if (generation != _generation) return;
             manager.ActionQueueSet.FastForwardNextActionId(replay.nextActionId);
@@ -70,19 +64,17 @@ public partial class SpectatorCombat
             _map.SetCombatAvailable(!_liveCombatEnded);
             if (!_liveCombatEnded) await SwitchAutomatic(() => { if (!_liveCombatEnded) _map.Hide(); }, generation);
         }
-        catch (Exception error) { Fail(L.T("combat.load_failed") + error.Message); }
+        catch (Exception error)
+        {
+            if (generation == _generation && IsInsideTree()) Fail(L.T("combat.load_failed") + error.Message);
+        }
     }
 
     public override void _Process(double delta)
     {
         _assembler.Expire(Time.GetTicksMsec());
         if (_session == null) return;
-        if (_session.IsHost && !_session.HasViewer) { _lastInk = ""; _inkViewer = 0; }
-        if (_session.IsHost && _session.HasViewer && (_inkTick += delta) >= 0.3)
-        {
-            _inkTick = 0;
-            HostInk();
-        }
+        _mapSync?.Tick(delta);
         if (!_session.ReplayRunning || _closing) return;
         _waitTime += delta;
         if (_loading)
@@ -151,8 +143,11 @@ public partial class SpectatorCombat
                     break;
             }
         }
-        catch (Exception error) { Fail(L.T("combat.sync_failed") + error.Message); }
-        finally { _dispatching = false; }
+        catch (Exception error)
+        {
+            if (generation == _generation && IsInsideTree()) Fail(L.T("combat.sync_failed") + error.Message);
+        }
+        finally { if (generation == _generation) _dispatching = false; }
     }
 
     private async Task<bool> NextFrame(int generation)
